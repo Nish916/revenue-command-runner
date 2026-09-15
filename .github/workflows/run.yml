@@ -50,7 +50,7 @@ jobs:
             "submitted":d.get("submitted"),
             "source_status":d.get("source_status"),
             "first_cash":(d.get("queue") or {}).get("first_cash",[])[:8],
-  "high_ticket":(d.get("queue") or {}).get("high_ticket",[])[:8],
+            "high_ticket":(d.get("queue") or {}).get("high_ticket",[])[:8],
             "fast_cash":(d.get("queue") or {}).get("fast_cash",[])[:8],
             "buyer_intent":(d.get("queue") or {}).get("buyer_intent",[])[:8],
             "contract_jobs":(d.get("queue") or {}).get("contract_jobs",[])[:8],
