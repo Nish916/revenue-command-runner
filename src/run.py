@@ -404,11 +404,14 @@ def braintrust():
         except: hi=0
         rate=hi or lo
         fit=fit_score(txt)
-        out.append({"source":"braintrust","kind":"paid-hourly","title":title,
+        pay_type=str(x.get("payment_type") or "hourly").lower()
+        kind="paid-hourly" if pay_type in ("hourly","hour","per_hour") else ("paid-task" if pay_type in ("per_task","task","fixed") else "contract-job")
+        score_mult=12 if kind=="paid-hourly" else 8 if kind=="paid-task" else 0.02
+        out.append({"source":"braintrust","kind":kind,"title":title,
           "company":((x.get("employer") or {}).get("name")),
           "url":"https://app.usebraintrust.com/jobs/"+str(x.get("id")),
-          "amount_guess":rate,"amount_basis":x.get("payment_type") or "hourly",
-          "fit":fit,"score":round(rate*12*(1+0.1*fit),2),"action":"APPLY"})
+          "amount_guess":rate,"amount_basis":pay_type,
+          "fit":fit,"score":round(rate*score_mult*(1+0.25*fit),2),"action":"APPLY"})
     return sorted(out,key=lambda x:x["score"],reverse=True)[:25]
 
 def jobicy():
@@ -604,7 +607,7 @@ def nearskill():
             # Published pay still requires screening/acceptance; never call it guaranteed.
             multiplier=18 if kind=="paid-trial" else 14 if kind=="paid-hourly" else 8
             fit=len(terms)
-            score=amt*multiplier*(1+0.12*fit)*(1+min(openings,100)/500)
+            score=amt*multiplier*(1+0.35*fit)*(1+min(openings,100)/500)
             return {
               "source":"nearskill","kind":kind,"title":title,"company":org,"url":url,
               "amount_guess":amt,"currency":sal.get("currency") if isinstance(sal,dict) else None,

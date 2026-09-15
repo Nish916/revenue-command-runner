@@ -55,6 +55,14 @@ def deterministic():
     ok=[s["source"] for s in src if s.get("ok")]
     bad=[s["source"] for s in src if not s.get("ok")]
     lines.append(f"- SOURCE HEALTH: OK={','.join(ok) or 'none'}; failed={','.join(bad) or 'none'}.")
+    cat=result.get("exploration_catalog") or {}
+    modes=cat.get("mode_counts") or {}
+    total=int(cat.get("total_sources") or 0)
+    auth=int(modes.get("AUTH_REQUIRED") or 0)
+    if total:
+      lines.append(f"- BOTTLENECK: {auth}/{total} tracked surfaces require authentication/manual account access; do not treat them as executable until an authorized session exists.")
+    if first:
+      lines.append("- BOTTLENECK: first-cash listings still require payer screening/application acceptance; discovery alone cannot create settlement.")
 
     lines += [
       "- GUARANTEE GATE: Never call an opportunity guaranteed before payer acceptance/allocation. Once fixed-pay funded work is accepted and completion criteria are under our control, it outranks every search lane.",
