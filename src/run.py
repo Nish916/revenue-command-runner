@@ -325,6 +325,17 @@ total=float(native.get("amount_rtc",0) or 0)+float(hosted.get("amount_rtc",0) or
 
 result={
  "ts":now(),
+ "payment_collection":{
+   "hub":"https://nishant-payment-hub.vercel.app",
+   "commercial_rule":"UPFRONT_OR_FUNDED_MILESTONE",
+   "rails":[
+     {"name":"INR bank/UPI","status":"AVAILABLE_ON_INVOICE","public_sensitive_details":False},
+     {"name":"Wise","status":"ACCOUNT_EXISTS_VERIFY_RECEIVING_DETAILS","public_sensitive_details":False},
+     {"name":"PayPal","status":"KYC_REQUIRED_BEFORE_RECEIVE_WITHDRAW","public_sensitive_details":False},
+     {"name":"Toku/Stripe Express","status":"PAYOUT_INFO_REQUIRED","public_sensitive_details":False},
+     {"name":"USDC/Base via Coinbase","status":"TRAVEL_RULE_SENDER_INFO_REQUIRED","public_sensitive_details":False}
+   ]
+ },
  "settlement":{
    "rustchain_native":native,"rustchain_hosted":hosted,"rustchain_total_rtc":total
  },
