@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 import concurrent.futures, datetime, html, json, os, pathlib, re, urllib.parse, urllib.request, xml.etree.ElementTree as ET
 
-ROOT=pathlib.Path(__file__).resolve().parents[1]\nTOKEN=os.getenv("GITHUB_TOKEN","")
+ROOT=pathlib.Path(__file__).resolve().parents[1]
+TOKEN=os.getenv("GITHUB_TOKEN","")
 HEADERS={"User-Agent":"revenue-command-runner/2.0","Accept":"application/json,text/html;q=0.9,*/*;q=0.8"}
 if TOKEN:
     HEADERS["Authorization"]="Bearer "+TOKEN
