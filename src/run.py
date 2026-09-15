@@ -325,6 +325,22 @@ total=float(native.get("amount_rtc",0) or 0)+float(hosted.get("amount_rtc",0) or
 
 result={
  "ts":now(),
+ "payment_floor":{
+   "mode":"ZERO_HOUR_EMERGENCY",
+   "target":"Maximize probability of at least one legitimate external settlement per hour; never guarantee it.",
+   "priority_order":[
+     "accepted_or_funded_work",
+     "paid_qualification_or_hourly_task",
+     "prepaid_fixed_scope_service",
+     "warm_buyer_upfront_or_milestone",
+     "verified_unassigned_bounty",
+     "high_ticket_rfp"
+   ],
+   "rotation_rule":"Never spend two consecutive cycles on the same blocked source without new evidence.",
+   "high_ticket_attention_cap_pct_until_floor":25,
+   "minimum_independent_payer_lanes":5,
+   "cycle_output":["NOW","NEXT","PARK"]
+ },
  "payment_collection":{
    "hub":"https://nishant-payment-hub.vercel.app",
    "commercial_rule":"UPFRONT_OR_FUNDED_MILESTONE",
