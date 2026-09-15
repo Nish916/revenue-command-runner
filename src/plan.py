@@ -6,6 +6,7 @@ result=json.loads((root/"result.json").read_text())
 
 def deterministic():
     q=result.get("queue") or {}
+    first=q.get("first_cash") or []
     fast=q.get("fast_cash") or []
     high=q.get("high_ticket") or []
     intent=q.get("buyer_intent") or []
@@ -26,7 +27,10 @@ def deterministic():
       f"- VERIFIED: RustChain #2259 state is {(sub.get('rustchain_2259') or {}).get('state','unknown')}.",
     ]
 
-    if fast:
+    if first:
+      x=first[0]
+      lines.append(f"- NOW: Published-pay screening lane [{x.get('source')}] {x.get('title')} — pay {x.get('amount_guess')} {x.get('currency') or ''} ({x.get('amount_basis')}) — action {x.get('action')}. This is NOT guaranteed until accepted/allocated by the payer.")
+    elif fast:
       x=fast[0]
       lines.append(f"- NOW: Closest-to-cash candidate [{x.get('source')}] {x.get('title')} — parsed amount {x.get('amount_guess')} — action {x.get('action')}.")
     elif intent:
@@ -53,6 +57,7 @@ def deterministic():
     lines.append(f"- SOURCE HEALTH: OK={','.join(ok) or 'none'}; failed={','.join(bad) or 'none'}.")
 
     lines += [
+      "- GUARANTEE GATE: Never call an opportunity guaranteed before payer acceptance/allocation. Once fixed-pay funded work is accepted and completion criteria are under our control, it outranks every search lane.",
       "- EXECUTION LAW 1: A pending proposal, PR, claim, review, KYC review or unpaid deliverable never satisfies the hourly floor.",
       "- EXECUTION LAW 2: If no settlement is verified, prioritize in this order: ACCEPTED/FUNDED work > paid qualification/task > prepaid fixed-scope service > warm buyer invoice/milestone > new verified bounty > high-ticket proposal.",
       "- EXECUTION LAW 3: Spend no more than 25% of a cycle on high-ticket research until a recurring cash floor exists.",

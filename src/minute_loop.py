@@ -4,6 +4,7 @@ import datetime, json, pathlib, time, urllib.parse, urllib.request
 root = pathlib.Path(__file__).resolve().parents[1]
 base = json.loads((root / "result.json").read_text())
 queue = base.get("queue") or {}
+first = queue.get("first_cash") or []
 fast = queue.get("fast_cash") or []
 ranked = queue.get("all_ranked") or []
 
@@ -33,7 +34,7 @@ def settlement():
 def pick(cycle):
     pool = []
     seen = set()
-    for item in fast + ranked:
+    for item in first + fast + ranked:
         key = (item.get("source"), item.get("url"), item.get("title"))
         if key in seen:
             continue

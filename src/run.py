@@ -548,8 +548,82 @@ def github_intent():
               "updated_at":it.get("updated_at"),"score":round(score,2),"action":"VERIFY_CONTACT"}
     return sorted(out.values(),key=lambda x:x["score"],reverse=True)[:30]
 
+
+def nearskill():
+    """Fresh published-pay remote roles/studies, filtered for India + Nishant-profile fit."""
+    searches=["crm","hubspot","salesforce","revenue operations","marketing","growth","customer success","prompt engineering","ai evaluation"]
+    browser_headers={"User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/149 Safari/537.36"}
+    def grab(url):
+        req=urllib.request.Request(url,headers=browser_headers)
+        with urllib.request.urlopen(req,timeout=18) as r:
+            return r.read().decode("utf-8","ignore")
+    links=set()
+    for q in searches:
+        try:
+            page=grab("https://nearskill.in/jobs?"+urllib.parse.urlencode({"search":q}))
+            for href in re.findall(r'/jobs/[A-Za-z0-9_-]+',page):
+                if href != "/jobs/category": links.add(urllib.parse.urljoin("https://nearskill.in",href))
+        except Exception:
+            continue
+    # Keep each cloud cycle bounded.
+    links=list(sorted(links))[:42]
+    specialist_mismatch=re.compile(r"(?i)(nuclear|radiation|radiological|explosive|blasting|chemical defense|physician|medical doctor|ulcerative colitis|fpga|vivado|quartus|solidworks|autocad|attorney|public defender|licensed lawyer|political forecaster|accounting advisory|external audit|tax specialist)")
+    profile_terms=re.compile(r"(?i)(crm|hubspot|salesforce|revenue operations|revops|marketing|growth|customer success|lifecycle|martech|automation|b2b|saas|campaign|analytics|ga4|seo|prompt engineering|ai evaluation|workflow|operations)")
+    def parse_job(url):
+        try:
+            page=grab(url)
+            job=None
+            for m in re.finditer(r'<script[^>]+type=["\\\']application/ld\\+json["\\\'][^>]*>(.*?)</script>',page,re.I|re.S):
+                try:d=json.loads(html.unescape(m.group(1)))
+                except Exception:continue
+                if isinstance(d,dict) and d.get("@type")=="JobPosting": job=d; break
+            if not job:return None
+            title=job.get("title") or ""
+            desc=clean_text(job.get("description") or "")
+            quals=clean_text(job.get("qualifications") or "")
+            skills=clean_text(job.get("skills") or "")
+            txt=" ".join([title,desc,quals,skills])
+            if BAD.search(txt) or specialist_mismatch.search(txt):return None
+            terms=set(m.group(0).lower() for m in profile_terms.finditer(txt))
+            if len(terms)<2:return None
+            locs=[z.get("name","") for z in (job.get("applicantLocationRequirements") or []) if isinstance(z,dict)]
+            if locs and not any(x.lower() in ("india","worldwide","global","anywhere") for x in locs):return None
+            sal=job.get("baseSalary") or {}
+            val=(sal.get("value") or {}) if isinstance(sal,dict) else {}
+            try:lo=float(val.get("minValue") or val.get("value") or 0)
+            except:lo=0
+            try:hi=float(val.get("maxValue") or val.get("value") or 0)
+            except:hi=0
+            amt=hi or lo
+            if amt<=0:return None
+            unit=str(val.get("unitText") or "").upper()
+            openings=int(job.get("totalJobOpenings") or 0)
+            org=(job.get("hiringOrganization") or {}).get("name") if isinstance(job.get("hiringOrganization"),dict) else None
+            fixed_hint=bool(re.search(r"(?i)(one[- ]time|fixed|paid trial|paid study|paid discovery session)",desc))
+            kind="paid-trial" if fixed_hint else "paid-hourly" if unit=="HOUR" else "contract-job"
+            # Published pay still requires screening/acceptance; never call it guaranteed.
+            multiplier=18 if kind=="paid-trial" else 14 if kind=="paid-hourly" else 8
+            fit=len(terms)
+            score=amt*multiplier*(1+0.12*fit)*(1+min(openings,100)/500)
+            return {
+              "source":"nearskill","kind":kind,"title":title,"company":org,"url":url,
+              "amount_guess":amt,"currency":sal.get("currency") if isinstance(sal,dict) else None,
+              "amount_basis":"fixed" if fixed_hint else ("hourly" if unit=="HOUR" else unit.lower() or "published"),
+              "fit":fit,"openings":openings,"locations":locs,"date_posted":job.get("datePosted"),
+              "pay_certainty":"PUBLISHED_PAY_SCREENING_REQUIRED","manual_gate":"APPLICATION_OR_SCREENING",
+              "score":round(score,2),"action":"APPLY_OR_PREP"
+            }
+        except Exception:
+            return None
+    out=[]
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
+        for item in ex.map(parse_job,links):
+            if item:out.append(item)
+    seen={x["url"]:x for x in out}
+    return sorted(seen.values(),key=lambda x:x["score"],reverse=True)[:25]
+
 SOURCES=[
-  ("github",github_paid),("laborx",laborx),("oneforma",oneforma),
+  ("github",github_paid),("laborx",laborx),("nearskill",nearskill),("oneforma",oneforma),
   ("superteam",superteam),("rfp",settle_rfps),("devpost",devpost_api),
   ("security",security_programs),("remoteok",remoteok),("arbeitnow",arbeitnow),
   ("remotive",remotive),("freelancer",freelancer),("braintrust",braintrust),
@@ -605,6 +679,7 @@ result={
    "rotation_rule":"Never spend two consecutive cycles on the same blocked source without new evidence.",
    "high_ticket_attention_cap_pct_until_floor":25,
    "minimum_independent_payer_lanes":5,
+   "guarantee_definition":"Only accepted/funded fixed-pay work with objective acceptance and no remaining payer discretion can be called guarantee-ready; discovery/application alone never qualifies.",
    "cycle_output":["NOW","NEXT","PARK"]
  },
  "payment_collection":{
@@ -627,6 +702,7 @@ result={
  },
  "source_status":[{k:v for k,v in s.items() if k!="items"} for s in sorted(source_results,key=lambda x:x["source"])],
  "queue":{
+   "first_cash":[x for x in all_items if x.get("pay_certainty")=="PUBLISHED_PAY_SCREENING_REQUIRED"][:20],
    "high_ticket":[x for x in all_items if x.get("amount_guess",0)>=2500][:12],
    "fast_cash":[x for x in all_items if x.get("kind") in ("paid-hourly","freelance")][:20],
    "buyer_intent":[x for x in all_items if x.get("kind")=="buyer-intent"][:20],

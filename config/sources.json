@@ -554,6 +554,27 @@
       "mode": "PARKED_ZERO_INVENTORY",
       "url": "https://www.bountybook.ai/",
       "notes": "Official inventory last verified zero; do not trust stale local claims."
+    },
+    {
+      "name": "NearSkill",
+      "category": "paid-study",
+      "mode": "ACTIVE_FEED",
+      "url": "https://nearskill.in/jobs",
+      "notes": "Fresh structured employer listings with published pay; filter for India/remote and profile fit; screening still required."
+    },
+    {
+      "name": "Test IO",
+      "category": "testing",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://test.io/company/become-a-tester",
+      "notes": "No registration fee; paid accepted bugs/test cases; invitations and acceptance vary."
+    },
+    {
+      "name": "UserQ",
+      "category": "testing",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://userq.com/in/",
+      "notes": "India-facing remote user-testing panel; tester availability and qualification vary."
     }
   ]
 }
