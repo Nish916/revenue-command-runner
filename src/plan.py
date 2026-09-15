@@ -8,11 +8,14 @@ def deterministic():
     q=result.get("queue") or {}
     fast=q.get("fast_cash") or []
     high=q.get("high_ticket") or []
+    intent=q.get("buyer_intent") or []
+    contracts=q.get("contract_jobs") or []
     allq=q.get("all_ranked") or []
     sub=result.get("submitted") or {}
     settle=result.get("settlement") or {}
     src=result.get("source_status") or []
-    floor=result.get("payment_floor") or {}\n    catalog=result.get("exploration_catalog") or {}
+    floor=result.get("payment_floor") or {}
+    catalog=result.get("exploration_catalog") or {}
 
     lines=[
       "## NO-ZERO-HOUR PAYMENT CONTROLLER",
