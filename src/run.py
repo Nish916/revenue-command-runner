@@ -7,9 +7,10 @@ HEADERS={"User-Agent":"revenue-command-runner/2.0","Accept":"application/json,te
 if TOKEN:
     HEADERS["Authorization"]="Bearer "+TOKEN
 
-BAD=re.compile(r"(?i)(casino|gambl|deposit.*to earn|stake.*to earn|flash usdt|captcha bypass|identity rental|account sale|buy account|developer account verification|account verification|trial registration|register account|create account|sign up.*account|bulk sms|survey respondents|email leads|lead list|scrape private|private contacts|sniper bot|wash trade|self[- ]fund)")
+BAD=re.compile(r"(?i)(casino|gambl|deposit.*to earn|stake.*to earn|flash usdt|captcha bypass|identity rental|account sale|buy account|developer account verification|account verification|trial registration|register account|create account|sign up.*account|bulk sms|survey respondents|email leads|lead list|scrape private|private contacts|mychart|health record data sharing|medical records sharing|patient portal data sharing|sniper bot|wash trade|self[- ]fund)")
 FIT=re.compile(r"(?i)(python|javascript|typescript|api|integration|automation|ai|agent|research|technical writing|documentation|data|analytics|seo|marketing|growth|crm|salesforce|hubspot|qa|testing|web|node|content)")
 MONEY=re.compile(r"(?i)(?:\$|USD\s*|USDC\s*|USDG\s*)([0-9][0-9,]*(?:\.\d+)?)")
+DEMAND=re.compile(r"(?i)(?:looking for|need|seeking|hiring|wanted|want to hire|contracting|paid)\\s+(?:an?\\s+)?(?:consultant|freelancer|contractor|developer|engineer|marketer|marketing expert|crm expert|salesforce expert|hubspot expert|automation expert|ai expert|writer|analyst|researcher|help|work|task|bounty)")
 
 def now(): return datetime.datetime.now(datetime.timezone.utc).isoformat()
 
