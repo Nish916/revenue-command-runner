@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-import concurrent.futures, datetime, html, json, os, re, urllib.parse, urllib.request, xml.etree.ElementTree as ET
+import concurrent.futures, datetime, html, json, os, pathlib, re, urllib.parse, urllib.request, xml.etree.ElementTree as ET
 
-TOKEN=os.getenv("GITHUB_TOKEN","")
+ROOT=pathlib.Path(__file__).resolve().parents[1]\nTOKEN=os.getenv("GITHUB_TOKEN","")
 HEADERS={"User-Agent":"revenue-command-runner/2.0","Accept":"application/json,text/html;q=0.9,*/*;q=0.8"}
 if TOKEN:
     HEADERS["Authorization"]="Bearer "+TOKEN
@@ -561,12 +561,33 @@ all_items=[]
 for src in source_results: all_items.extend(src.get("items",[]))
 all_items=sorted(all_items,key=lambda x:x.get("score",0),reverse=True)
 
+catalog={}
+try:
+    catalog=json.loads((ROOT/"config"/"sources.json").read_text())
+except Exception:
+    catalog={"sources":[]}
+catalog_sources=catalog.get("sources",[])
+mode_counts={}
+category_counts={}
+for c in catalog_sources:
+    mode=c.get("mode","UNKNOWN")
+    category=c.get("category","unknown")
+    mode_counts[mode]=mode_counts.get(mode,0)+1
+    category_counts[category]=category_counts.get(category,0)+1
+
 native=rust("RTCbc589ef246bc1c5c8c44117f1d66b226f33b9f73")
 hosted=rust("Nish916")
 total=float(native.get("amount_rtc",0) or 0)+float(hosted.get("amount_rtc",0) or 0)
 
 result={
  "ts":now(),
+ "exploration_catalog":{
+   "total_sources":len(catalog_sources),
+   "mode_counts":mode_counts,
+   "category_counts":category_counts,
+   "catalog_file":"config/sources.json",
+   "intent_dictionary_file":"config/intent-signals.json"
+ },
  "payment_floor":{
    "mode":"ZERO_HOUR_EMERGENCY",
    "target":"Maximize probability of at least one legitimate external settlement per hour; never guarantee it.",
