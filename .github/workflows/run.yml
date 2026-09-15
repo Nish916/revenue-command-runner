@@ -7,7 +7,6 @@ on:
 permissions:
   contents: read
   issues: write
-  models: read
 
 concurrency:
   group: revenue-command-runner
@@ -23,9 +22,9 @@ jobs:
       - name: Execute revenue command
         run: python3 src/run.py | tee result.json
 
-      - name: AI decision layer
+      - name: Cloud decision layer
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: python3 src/plan.py | tee /tmp/plan.txt
 
       - name: Update dashboard issue
@@ -37,7 +36,7 @@ jobs:
             echo
             echo 'Updated: '`date -u +"%Y-%m-%d %H:%M:%S UTC"`
             echo
-            echo '## AI decision'
+            echo '## Decision'
             cat plan.md
             echo
             echo '## Live evidence'
