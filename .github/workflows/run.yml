@@ -24,15 +24,15 @@ jobs:
       - name: Execute deep discovery
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python3 src/run.py | tee result.json
+        run: set -o pipefail; python3 src/run.py | tee result.json
 
       - name: Run minute-level payment rotation
-        run: python3 src/minute_loop.py | tee /tmp/minute-loop.log
+        run: set -o pipefail; python3 src/minute_loop.py | tee /tmp/minute-loop.log
 
       - name: Cloud decision layer
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: python3 src/plan.py | tee /tmp/plan.txt
+        run: set -o pipefail; python3 src/plan.py | tee /tmp/plan.txt
 
       - name: Build compact dashboard
         run: |
