@@ -20,12 +20,31 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Execute revenue command
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python3 src/run.py | tee result.json
 
       - name: Cloud decision layer
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: python3 src/plan.py | tee /tmp/plan.txt
+
+      - name: Build compact dashboard
+        run: |
+          python3 - <<'PY'
+          import json
+          d=json.load(open("result.json"))
+          compact={
+            "ts":d.get("ts"),
+            "settlement":d.get("settlement"),
+            "submitted":d.get("submitted"),
+            "source_status":d.get("source_status"),
+            "high_ticket":(d.get("queue") or {}).get("high_ticket",[])[:8],
+            "fast_cash":(d.get("queue") or {}).get("fast_cash",[])[:8],
+            "rules":d.get("rules")
+          }
+          open("/tmp/compact.json","w").write(json.dumps(compact,indent=2))
+          PY
 
       - name: Update dashboard issue
         env:
@@ -39,9 +58,9 @@ jobs:
             echo '## Decision'
             cat plan.md
             echo
-            echo '## Live evidence'
+            echo '## Compact evidence'
             echo '~~~json'
-            cat result.json
+            cat /tmp/compact.json
             echo '~~~'
           } > /tmp/dashboard.md
 
@@ -58,7 +77,7 @@ jobs:
           cat plan.md >> "$GITHUB_STEP_SUMMARY"
           echo >> "$GITHUB_STEP_SUMMARY"
           echo '~~~json' >> "$GITHUB_STEP_SUMMARY"
-          cat result.json >> "$GITHUB_STEP_SUMMARY"
+          cat /tmp/compact.json >> "$GITHUB_STEP_SUMMARY"
           echo '~~~' >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4
