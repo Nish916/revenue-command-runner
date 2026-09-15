@@ -1,0 +1,559 @@
+{
+  "version": 1,
+  "policy": "Track broadly, execute only on legitimate externally-funded work. AUTH_REQUIRED and DISCOVERY_TARGET entries are not assumed active or payable until verified.",
+  "sources": [
+    {
+      "name": "GitHub paid issues",
+      "category": "bounty",
+      "mode": "ACTIVE_FEED",
+      "url": "https://github.com/",
+      "notes": "Unassigned, funded-looking issues; independent verification required."
+    },
+    {
+      "name": "LaborX",
+      "category": "freelance",
+      "mode": "ACTIVE_FEED",
+      "url": "https://laborx.com/jobs",
+      "notes": "Filter identity/account sale, trading, gambling, scraping and restricted jobs."
+    },
+    {
+      "name": "OneForma",
+      "category": "ai-data",
+      "mode": "ACTIVE_FEED_AUTH",
+      "url": "https://www.oneforma.com/jobs/",
+      "notes": "Authenticated account exists; public feed may be incomplete."
+    },
+    {
+      "name": "Superteam Earn",
+      "category": "bounty",
+      "mode": "ACTIVE_FEED_AUTH",
+      "url": "https://superteam.fun/earn/",
+      "notes": "Global USDC bounties; account required to submit."
+    },
+    {
+      "name": "Settle RFP Hunter",
+      "category": "rfp",
+      "mode": "ACTIVE_FEED",
+      "url": "https://usesettle.com/rfp-hunter",
+      "notes": "Public RFP discovery; eligibility verification required."
+    },
+    {
+      "name": "Devpost",
+      "category": "challenge",
+      "mode": "ACTIVE_FEED",
+      "url": "https://devpost.com/hackathons",
+      "notes": "Open hackathons/challenges with prize pools."
+    },
+    {
+      "name": "BountyHunte.rs",
+      "category": "security",
+      "mode": "ACTIVE_FEED",
+      "url": "https://bountyhunte.rs/programs",
+      "notes": "Discovery only; work only inside explicit authorized program scope."
+    },
+    {
+      "name": "Remote OK",
+      "category": "job",
+      "mode": "ACTIVE_FEED",
+      "url": "https://remoteok.com/",
+      "notes": "Remote jobs API."
+    },
+    {
+      "name": "Arbeitnow",
+      "category": "job",
+      "mode": "ACTIVE_FEED",
+      "url": "https://www.arbeitnow.com/",
+      "notes": "Public job board API."
+    },
+    {
+      "name": "Remotive",
+      "category": "job",
+      "mode": "ACTIVE_FEED",
+      "url": "https://remotive.com/",
+      "notes": "Remote jobs API."
+    },
+    {
+      "name": "Freelancer",
+      "category": "freelance",
+      "mode": "ACTIVE_FEED",
+      "url": "https://www.freelancer.com/",
+      "notes": "Active-project API; bid/competition visible."
+    },
+    {
+      "name": "Braintrust",
+      "category": "freelance",
+      "mode": "ACTIVE_FEED",
+      "url": "https://app.usebraintrust.com/",
+      "notes": "Public jobs API with rates."
+    },
+    {
+      "name": "Jobicy",
+      "category": "job",
+      "mode": "ACTIVE_FEED",
+      "url": "https://jobicy.com/",
+      "notes": "Public remote-jobs API."
+    },
+    {
+      "name": "We Work Remotely",
+      "category": "job",
+      "mode": "ACTIVE_FEED",
+      "url": "https://weworkremotely.com/",
+      "notes": "RSS feed."
+    },
+    {
+      "name": "Himalayas",
+      "category": "job",
+      "mode": "ACTIVE_FEED",
+      "url": "https://himalayas.app/jobs",
+      "notes": "Public jobs API."
+    },
+    {
+      "name": "Hacker News Algolia",
+      "category": "buyer-intent",
+      "mode": "ACTIVE_FEED",
+      "url": "https://hn.algolia.com/",
+      "notes": "Fresh explicit buyer-intent phrase beacon."
+    },
+    {
+      "name": "GitHub buyer intent",
+      "category": "buyer-intent",
+      "mode": "ACTIVE_FEED",
+      "url": "https://github.com/issues",
+      "notes": "Explicit consultant/contractor/paid-help issue beacon."
+    },
+    {
+      "name": "uTest",
+      "category": "testing",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://www.utest.com/",
+      "notes": "Paid test cycles and surveys; account flow."
+    },
+    {
+      "name": "Dscout",
+      "category": "research",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://dscout.com/",
+      "notes": "Paid missions/research."
+    },
+    {
+      "name": "DataForce",
+      "category": "ai-data",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://dataforcecommunity.transperfect.com/",
+      "notes": "Data collection/evaluation projects."
+    },
+    {
+      "name": "CrowdGen by Appen",
+      "category": "ai-data",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://crowdgen.com/",
+      "notes": "AI/data tasks; project availability varies."
+    },
+    {
+      "name": "Outlier",
+      "category": "ai-evaluation",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://outlier.ai/",
+      "notes": "AI training/evaluation projects; eligibility varies."
+    },
+    {
+      "name": "DataAnnotation",
+      "category": "ai-evaluation",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://www.dataannotation.tech/",
+      "notes": "Assessment/project availability varies by region/profile."
+    },
+    {
+      "name": "TELUS Digital AI Community",
+      "category": "ai-data",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://www.telusdigital.com/",
+      "notes": "Search/data/AI evaluation projects."
+    },
+    {
+      "name": "RWS TrainAI",
+      "category": "ai-data",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://www.rws.com/",
+      "notes": "AI data projects."
+    },
+    {
+      "name": "Toloka",
+      "category": "microtask",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://toloka.ai/",
+      "notes": "Microtasks/data work; availability varies."
+    },
+    {
+      "name": "Clickworker",
+      "category": "microtask",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://www.clickworker.com/",
+      "notes": "Microtasks/UHRS where available."
+    },
+    {
+      "name": "Prolific",
+      "category": "research",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://www.prolific.com/",
+      "notes": "Paid research participation; eligibility/waitlist may apply."
+    },
+    {
+      "name": "UserTesting",
+      "category": "testing",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://www.usertesting.com/",
+      "notes": "Paid usability tests."
+    },
+    {
+      "name": "UserInterviews",
+      "category": "research",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://www.userinterviews.com/",
+      "notes": "Paid research studies."
+    },
+    {
+      "name": "Respondent",
+      "category": "research",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://www.respondent.io/",
+      "notes": "Paid professional research interviews."
+    },
+    {
+      "name": "Testlio",
+      "category": "testing",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://testlio.com/",
+      "notes": "Freelance testing opportunities."
+    },
+    {
+      "name": "Trymata",
+      "category": "testing",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://trymata.com/",
+      "notes": "Usability testing."
+    },
+    {
+      "name": "UserCrowd",
+      "category": "research",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://www.usercrowd.com/",
+      "notes": "Short design/research tests."
+    },
+    {
+      "name": "CloudResearch Connect",
+      "category": "research",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://connect.cloudresearch.com/",
+      "notes": "Paid research participation."
+    },
+    {
+      "name": "Microworkers",
+      "category": "microtask",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://www.microworkers.com/",
+      "notes": "Microtasks; quality filters required."
+    },
+    {
+      "name": "Upwork",
+      "category": "freelance",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://www.upwork.com/",
+      "notes": "Contract marketplace; proposal/connect rules."
+    },
+    {
+      "name": "Contra",
+      "category": "freelance",
+      "mode": "DISCOVERY_TARGET",
+      "url": "https://contra.com/opportunities",
+      "notes": "Public opportunities page; parser target."
+    },
+    {
+      "name": "PeoplePerHour",
+      "category": "freelance",
+      "mode": "DISCOVERY_TARGET",
+      "url": "https://www.peopleperhour.com/",
+      "notes": "Freelance projects; parser/auth target."
+    },
+    {
+      "name": "Guru",
+      "category": "freelance",
+      "mode": "PARKED_BLOCKED",
+      "url": "https://www.guru.com/d/jobs/",
+      "notes": "Current cloud request returned 403."
+    },
+    {
+      "name": "Toptal",
+      "category": "freelance",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://www.toptal.com/",
+      "notes": "Screened talent network."
+    },
+    {
+      "name": "Catalant",
+      "category": "consulting",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://gocatalant.com/",
+      "notes": "Independent consulting projects."
+    },
+    {
+      "name": "Expert360",
+      "category": "consulting",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://expert360.com/",
+      "notes": "Consulting/talent marketplace."
+    },
+    {
+      "name": "Worksome",
+      "category": "freelance",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://www.worksome.com/",
+      "notes": "Contract talent marketplace."
+    },
+    {
+      "name": "Malt",
+      "category": "freelance",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://www.malt.com/",
+      "notes": "Freelance marketplace; geography varies."
+    },
+    {
+      "name": "GLG",
+      "category": "expert-network",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://glginsights.com/",
+      "notes": "Paid expert consultations subject to compliance."
+    },
+    {
+      "name": "Guidepoint",
+      "category": "expert-network",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://www.guidepoint.com/",
+      "notes": "Paid expert calls subject to compliance."
+    },
+    {
+      "name": "AlphaSights",
+      "category": "expert-network",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://www.alphasights.com/",
+      "notes": "Expert consultations."
+    },
+    {
+      "name": "Third Bridge",
+      "category": "expert-network",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://thirdbridge.com/",
+      "notes": "Expert network consultations."
+    },
+    {
+      "name": "Coleman Research",
+      "category": "expert-network",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://www.colemanrg.com/",
+      "notes": "Expert consultations."
+    },
+    {
+      "name": "NewtonX",
+      "category": "expert-network",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://www.newtonx.com/",
+      "notes": "B2B research/expert calls."
+    },
+    {
+      "name": "proSapient",
+      "category": "expert-network",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://www.prosapient.com/",
+      "notes": "Expert network."
+    },
+    {
+      "name": "Algora",
+      "category": "opensource-bounty",
+      "mode": "DISCOVERY_TARGET",
+      "url": "https://algora.io/",
+      "notes": "Open-source bounties; API/parser target."
+    },
+    {
+      "name": "Polar",
+      "category": "opensource-bounty",
+      "mode": "DISCOVERY_TARGET",
+      "url": "https://polar.sh/",
+      "notes": "Open-source funding/bounties; verify live programs."
+    },
+    {
+      "name": "OnlyDust",
+      "category": "opensource-bounty",
+      "mode": "DISCOVERY_TARGET",
+      "url": "https://www.onlydust.com/",
+      "notes": "Open-source contribution programs."
+    },
+    {
+      "name": "DoraHacks",
+      "category": "challenge",
+      "mode": "DISCOVERY_TARGET",
+      "url": "https://dorahacks.io/",
+      "notes": "Hackathons and bounties."
+    },
+    {
+      "name": "Code4rena",
+      "category": "security",
+      "mode": "DISCOVERY_TARGET",
+      "url": "https://code4rena.com/audits",
+      "notes": "Authorized audit contests only."
+    },
+    {
+      "name": "Sherlock",
+      "category": "security",
+      "mode": "DISCOVERY_TARGET",
+      "url": "https://audits.sherlock.xyz/contests",
+      "notes": "Authorized audit contests only."
+    },
+    {
+      "name": "Cantina",
+      "category": "security",
+      "mode": "DISCOVERY_TARGET",
+      "url": "https://cantina.xyz/",
+      "notes": "Authorized security competitions only."
+    },
+    {
+      "name": "Immunefi",
+      "category": "security",
+      "mode": "DISCOVERY_TARGET",
+      "url": "https://immunefi.com/",
+      "notes": "Authorized bug bounty programs only."
+    },
+    {
+      "name": "HackerOne",
+      "category": "security",
+      "mode": "DISCOVERY_TARGET",
+      "url": "https://www.hackerone.com/",
+      "notes": "Authorized programs only."
+    },
+    {
+      "name": "Bugcrowd",
+      "category": "security",
+      "mode": "DISCOVERY_TARGET",
+      "url": "https://www.bugcrowd.com/",
+      "notes": "Authorized programs only."
+    },
+    {
+      "name": "Intigriti",
+      "category": "security",
+      "mode": "DISCOVERY_TARGET",
+      "url": "https://www.intigriti.com/",
+      "notes": "Authorized programs only."
+    },
+    {
+      "name": "YesWeHack",
+      "category": "security",
+      "mode": "DISCOVERY_TARGET",
+      "url": "https://www.yeswehack.com/",
+      "notes": "Authorized programs only."
+    },
+    {
+      "name": "UNGM",
+      "category": "procurement",
+      "mode": "DISCOVERY_TARGET",
+      "url": "https://www.ungm.org/",
+      "notes": "UN procurement/consultancy opportunities."
+    },
+    {
+      "name": "UNDP Procurement",
+      "category": "procurement",
+      "mode": "DISCOVERY_TARGET",
+      "url": "https://procurement-notices.undp.org/",
+      "notes": "International consultancy/procurement."
+    },
+    {
+      "name": "UNOPS",
+      "category": "procurement",
+      "mode": "DISCOVERY_TARGET",
+      "url": "https://www.unops.org/business-opportunities",
+      "notes": "International procurement."
+    },
+    {
+      "name": "UNICEF Supply",
+      "category": "procurement",
+      "mode": "DISCOVERY_TARGET",
+      "url": "https://www.unicef.org/supply/",
+      "notes": "Procurement/consulting opportunities."
+    },
+    {
+      "name": "World Bank eConsultant2",
+      "category": "procurement",
+      "mode": "DISCOVERY_TARGET",
+      "url": "https://wbgeconsult2.worldbank.org/",
+      "notes": "Consulting opportunities."
+    },
+    {
+      "name": "ADB Consultant Management System",
+      "category": "procurement",
+      "mode": "DISCOVERY_TARGET",
+      "url": "https://cms.adb.org/",
+      "notes": "Consulting opportunities."
+    },
+    {
+      "name": "EU TED",
+      "category": "procurement",
+      "mode": "DISCOVERY_TARGET",
+      "url": "https://ted.europa.eu/",
+      "notes": "EU tenders; eligibility varies."
+    },
+    {
+      "name": "UK Contracts Finder",
+      "category": "procurement",
+      "mode": "DISCOVERY_TARGET",
+      "url": "https://www.contractsfinder.service.gov.uk/",
+      "notes": "Public contracts; eligibility varies."
+    },
+    {
+      "name": "CanadaBuys",
+      "category": "procurement",
+      "mode": "DISCOVERY_TARGET",
+      "url": "https://canadabuys.canada.ca/",
+      "notes": "Public procurement; eligibility varies."
+    },
+    {
+      "name": "AusTender",
+      "category": "procurement",
+      "mode": "DISCOVERY_TARGET",
+      "url": "https://www.tenders.gov.au/",
+      "notes": "Australian procurement; eligibility varies."
+    },
+    {
+      "name": "SAM.gov",
+      "category": "procurement",
+      "mode": "DISCOVERY_TARGET",
+      "url": "https://sam.gov/",
+      "notes": "US federal opportunities; registrations/restrictions often apply."
+    },
+    {
+      "name": "Toku",
+      "category": "agent-marketplace",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://www.toku.agency/",
+      "notes": "Existing agent listing; Stripe payout onboarding pending."
+    },
+    {
+      "name": "Agent402/x402",
+      "category": "api-marketplace",
+      "mode": "ACTIVE_EXTERNAL",
+      "url": "https://www.agent402.tools/",
+      "notes": "Existing proof of paid external API call; discovery/sales ecosystem."
+    },
+    {
+      "name": "Dealwork.ai",
+      "category": "agent-marketplace",
+      "mode": "AUTH_REQUIRED",
+      "url": "",
+      "notes": "Registered account; funded safe inventory last known zero."
+    },
+    {
+      "name": "BountyBook",
+      "category": "bounty",
+      "mode": "PARKED_ZERO_INVENTORY",
+      "url": "https://www.bountybook.ai/",
+      "notes": "Official inventory last verified zero; do not trust stale local claims."
+    }
+  ]
+}
