@@ -15,14 +15,17 @@ concurrency:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 4
+    timeout-minutes: 6
     steps:
       - uses: actions/checkout@v4
 
-      - name: Execute revenue command
+      - name: Execute deep discovery
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python3 src/run.py | tee result.json
+
+      - name: Run minute-level payment rotation
+        run: python3 src/minute_loop.py | tee /tmp/minute-loop.log
 
       - name: Cloud decision layer
         env:
@@ -34,9 +37,13 @@ jobs:
           python3 - <<'PY'
           import json
           d=json.load(open("result.json"))
+          m=json.load(open("minute_state.json"))
           compact={
             "ts":d.get("ts"),
+            "payment_floor":d.get("payment_floor"),
             "settlement":d.get("settlement"),
+            "minute_cycles":m.get("cycles",[]),
+            "minute_final_delta_rtc":m.get("final_delta_rtc"),
             "submitted":d.get("submitted"),
             "source_status":d.get("source_status"),
             "high_ticket":(d.get("queue") or {}).get("high_ticket",[])[:8],
@@ -85,5 +92,6 @@ jobs:
           name: revenue-command-${{ github.run_id }}
           path: |
             result.json
+            minute_state.json
             plan.md
           retention-days: 7
