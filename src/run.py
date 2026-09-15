@@ -152,52 +152,104 @@ def laborx():
     return sorted(out,key=lambda x:x["score"],reverse=True)[:20]
 
 def oneforma():
-    s=fetch("https://www.oneforma.com/jobs/")
+    """Discover current OneForma projects from public JobPosting metadata.
+
+    Public pages often disclose that work is paid hourly but hide the exact local rate
+    until authenticated application. Keep those in discovery, never first-cash.
+    """
+    root=fetch("https://www.oneforma.com/jobs/")
+    links=[]
+    for href in re.findall(r'href=["\']([^"\']+/projects/[^"\']+/)["\']',root,re.I):
+        u=urllib.parse.urljoin("https://www.oneforma.com/",href)
+        if '/projects/page/' not in u: links.append(u)
+    links=list(dict.fromkeys(links))[:45]
     out=[]
-    # Job titles and nearby cards. Rates are often exposed in text/structured payload.
-    for m in re.finditer(r'<h[23][^>]*>(.*?)</h[23]>',s,re.I|re.S):
-        title=clean_text(m.group(1))
-        if len(title)<4:continue
-        frag=s[m.start():m.start()+7000]
-        text=clean_text(frag)
-        if BAD.search(title+" "+text): continue
-        if "India" not in text and "Remote" not in text:continue
-        amt=amount_guess(text)
-        if amt<=0:continue
-        fit=fit_score(title+" "+text[:1500])
-        href=""
-        hm=re.search(r'href=["\']([^"\']+)["\']',frag,re.I)
-        if hm: href=urllib.parse.urljoin("https://www.oneforma.com/jobs/",hm.group(1))
-        out.append({
-          "source":"oneforma","kind":"paid-hourly","title":title[:180],
-          "url":href or "https://www.oneforma.com/jobs/","amount_guess":amt,
-          "fit":fit,"score":round(amt*50*(1+0.08*fit),2),"action":"APPLY"
-        })
-    # De-dupe.
-    seen={x["title"]:x for x in out}
-    return sorted(seen.values(),key=lambda x:x["score"],reverse=True)[:20]
+    def parse(u):
+        try:
+            page=fetch(u)
+            for m in re.finditer(r'<script[^>]+type=["\']application/ld\+json["\'][^>]*>(.*?)</script>',page,re.I|re.S):
+                try:d=json.loads(html.unescape(m.group(1)))
+                except Exception:continue
+                objs=d if isinstance(d,list) else [d]
+                for job in objs:
+                    if not isinstance(job,dict) or job.get('@type')!='JobPosting': continue
+                    title=job.get('title') or ''
+                    desc=clean_text(job.get('description') or '')
+                    txt=title+' '+desc
+                    if BAD.search(txt): return None
+                    locs=[]
+                    for z in job.get('jobLocation') or []:
+                        if isinstance(z,dict):
+                            a=z.get('address') or {}
+                            if isinstance(a,dict): locs.append(str(a.get('addressCountry') or ''))
+                    # OneForma uses ISO country codes on project pages.
+                    if locs and not any(x.upper() in ('IN','IND','INDIA') for x in locs): return None
+                    fit=fit_score(txt)
+                    # Exact numeric rate is usually disclosed only after login.
+                    amt=amount_guess(desc)
+                    if not re.search(r'(?i)(compensation|paid|fixed hourly rate|rate per hour)',desc): return None
+                    return {
+                      'source':'oneforma','kind':'paid-hourly','title':title[:180],
+                      'url':u,'amount_guess':amt if amt>0 else 0,'amount_basis':'hourly_rate_hidden_until_application' if amt<=0 else 'published',
+                      'fit':fit,'locations':locs,'date_posted':job.get('datePosted'),
+                      'pay_certainty':'PUBLISHED_PAY_SCREENING_REQUIRED' if amt>0 else 'RATE_AUTH_REQUIRED',
+                      'manual_gate':'APPLICATION_OR_SCREENING','score':round((fit+1)*180+(amt*12 if amt>0 else 0),2),
+                      'action':'APPLY_OR_PREP' if amt>0 else 'VERIFY_RATE_AUTH'
+                    }
+        except Exception:
+            return None
+        return None
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as ex:
+        for item in ex.map(parse,links):
+            if item: out.append(item)
+    return sorted(out,key=lambda x:x['score'],reverse=True)[:25]
 
 def superteam():
-    s=fetch("https://superteam.fun/earn/bounties/")
-    text=clean_text(s)
-    out=[]
-    # Capture nearby chunks around currency mentions. This is discovery only.
-    for m in re.finditer(r'(?i)([0-9][0-9,]*(?:\.\d+)?)\s*(USDC|USDG|USD)',text):
-        try:amt=float(m.group(1).replace(",",""))
-        except:continue
-        if not (50<=amt<=100000):continue
-        chunk=text[max(0,m.start()-220):m.start()+420]
-        if BAD.search(chunk):continue
-        fit=fit_score(chunk)
-        out.append({
-          "source":"superteam","kind":"bounty","title":chunk[:220],
-          "url":"https://superteam.fun/earn/bounties/","amount_guess":amt,
-          "fit":fit,"score":round(amt*(1+0.08*fit),2),"action":"VERIFY"
-        })
-    # de-dupe by amount+title
-    uniq={}
-    for x in out:uniq[(x["amount_guess"],x["title"])]=x
-    return sorted(uniq.values(),key=lambda x:x["score"],reverse=True)[:15]
+    """Use Superteam's public search API and keep only genuinely current unpaid-to-enter listings."""
+    queries=['marketing','growth','content','research','qa','design','development','writing','ai','data']
+    now=datetime.datetime.now(datetime.timezone.utc)
+    out={}
+    risky=re.compile(r'(?i)(lottery|casino|betting|wager|perpetual futures|spot trading|execute a trade|run a trade|buy a ticket|purchase required|deposit required|stake required|trading volume)')
+    for q in queries:
+        try:
+            url='https://superteam.fun/api/search/'+urllib.parse.quote(q)+'?'+urllib.parse.urlencode({'bountiesLimit':'30','grantsLimit':'0'})
+            data=get_json(url)
+        except Exception:
+            continue
+        for x in data.get('results',[]):
+            if not isinstance(x,dict): continue
+            if x.get('isWinnersAnnounced'): continue
+            deadline=x.get('deadline')
+            try:
+                dl=datetime.datetime.fromisoformat(str(deadline).replace('Z','+00:00'))
+                if dl <= now: continue
+            except Exception:
+                continue
+            title=x.get('title') or ''
+            desc=clean_text(x.get('description') or '')
+            txt=title+' '+desc
+            if BAD.search(txt): continue
+            reward=float(x.get('rewardAmount') or 0)
+            if reward<=0: continue
+            fit=fit_score(txt)
+            token=x.get('token') or ''
+            risk=bool(risky.search(txt))
+            item={
+              'source':'superteam','kind':'bounty','title':title[:180],
+              'url':'https://superteam.fun/earn/listing/'+str(x.get('slug') or ''),
+              'amount_guess':reward,'currency':token,'fit':fit,'deadline':deadline,
+              'sponsor':((x.get('sponsor') or {}).get('name')) if isinstance(x.get('sponsor'),dict) else None,
+              'comments':((x.get('_count') or {}).get('Comments')) if isinstance(x.get('_count'),dict) else 0,
+              'score':round(reward*(1+0.25*fit)/(1+0.03*float(((x.get('_count') or {}).get('Comments') or 0))),2),
+              'action':'RESEARCH_ONLY_RISKY' if risk else 'VERIFY_AND_PREP',
+              'risk_flag':'CAPITAL_OR_GAMBLING_ADJACENT' if risk else None,
+              'pay_certainty':'FUNDED_BOUNTY_COMPETITIVE'
+            }
+            key=(x.get('id') or x.get('slug') or item['url'])
+            if key not in out or item['score']>out[key]['score']: out[key]=item
+    safe=[x for x in out.values() if not x.get('risk_flag')]
+    risky_items=[x for x in out.values() if x.get('risk_flag')]
+    return sorted(safe,key=lambda x:x['score'],reverse=True)[:20] + sorted(risky_items,key=lambda x:x['score'],reverse=True)[:5]
 
 def inspect_rfp_detail(url):
     try:
