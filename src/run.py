@@ -36,8 +36,16 @@ def search():
     for q in qs:
         d=safe(lambda:get("https://api.github.com/search/issues?"+urllib.parse.urlencode({"q":q,"per_page":30,"sort":"updated","order":"desc"})))
         for it in d.get("items",[]) if isinstance(d,dict) else []:
+            url=it.get("html_url") or ""
+            repo_url=it.get("repository_url") or ""
+            if "Nish916/revenue-command-runner" in url or "Nish916/revenue-command-runner" in repo_url:
+                continue
+            if it.get("assignees"):
+                continue
+            if re.search(r'(?i)(bounty-plaza|/arbitr/|bounty[-_]?radar|claim[-_]?tracker)', url):
+                continue
             txt=(it.get("title") or "")+" "+(it.get("body") or "")
-            if re.search(r'(?i)(casino|gambl|deposit.*to earn|stake.*to earn|flash usdt|captcha bypass|identity rental|account sale)',txt):continue
+            if re.search(r'(?i)(casino|gambl|deposit.*to earn|stake.*to earn|flash usdt|captcha bypass|identity rental|account sale|due for payment)',txt):continue
             vals=[]
             for m in re.finditer(r'(?i)(?:\$|USD\s*|USDC\s*)([0-9][0-9,]*(?:\.\d+)?)',txt):
                 try:vals.append(float(m.group(1).replace(",","")))
