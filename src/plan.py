@@ -12,7 +12,7 @@ def deterministic():
     sub=result.get("submitted") or {}
     settle=result.get("settlement") or {}
     src=result.get("source_status") or []
-    floor=result.get("payment_floor") or {}
+    floor=result.get("payment_floor") or {}\n    catalog=result.get("exploration_catalog") or {}
 
     lines=[
       "## NO-ZERO-HOUR PAYMENT CONTROLLER",
@@ -26,8 +26,20 @@ def deterministic():
     if fast:
       x=fast[0]
       lines.append(f"- NOW: Closest-to-cash candidate [{x.get('source')}] {x.get('title')} — parsed amount {x.get('amount_guess')} — action {x.get('action')}.")
+    elif intent:
+      x=intent[0]
+      lines.append(f"- NOW: Fresh buyer-intent [{x.get('source')}] {x.get('title')} — parsed amount {x.get('amount_guess')} — action {x.get('action')}. Verify the payer and scope before outreach.")
     else:
-      lines.append("- NOW: No fast-cash public candidate passed filters; immediately widen discovery instead of waiting on pending work.")
+      lines.append("- NOW: No fast-cash or explicit buyer-intent candidate passed filters; immediately widen discovery instead of waiting on pending work.")
+
+    if intent:
+      x=intent[0]
+      lines.append(f"- INTENT BEACON: [{x.get('source')}] {x.get('title')} — freshness/fit scored, action {x.get('action')}.")
+
+    if contracts:
+      lines.append(f"- CONTRACT POOL: {len(contracts)} ranked remote/contract jobs are available as a lower-speed independent payer lane.")
+
+    lines.append(f"- EXPLORATION CATALOG: {catalog.get('total_sources',0)} tracked earning surfaces across modes {catalog.get('mode_counts',{})}.")
 
     if high:
       x=high[0]
@@ -69,7 +81,7 @@ OPERATING RULES:
 - Pending proposal, PR, claim, review, KYC review, listing, headline reward, 402, self-transfer, or unpaid deliverable = ZERO earned.
 - Never wait on one payer. If blocked, PARK immediately and rotate.
 - Never spend two consecutive cycles on the same blocked source without new evidence.
-- Maintain at least 5 independent payer classes.
+- Maintain at least 5 independent payer classes and continuously expand buyer-intent/source beacons.
 - High-ticket research gets max 25% of attention until a recurring floor exists.
 - Every cycle must output NOW / NEXT / PARK.
 - NOW must identify a concrete payer, exact work, expected payout, and first action. Never say merely "monitor".
