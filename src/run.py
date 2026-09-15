@@ -10,7 +10,7 @@ if TOKEN:
 BAD=re.compile(r"(?i)(casino|gambl|deposit.*to earn|stake.*to earn|flash usdt|captcha bypass|identity rental|account sale|buy account|developer account verification|account verification|trial registration|register account|create account|sign up.*account|bulk sms|survey respondents|email leads|lead list|scrape private|private contacts|mychart|health record data sharing|medical records sharing|patient portal data sharing|sniper bot|wash trade|self[- ]fund)")
 FIT=re.compile(r"(?i)(python|javascript|typescript|api|integration|automation|ai|agent|research|technical writing|documentation|data|analytics|seo|marketing|growth|crm|salesforce|hubspot|qa|testing|web|node|content)")
 MONEY=re.compile(r"(?i)(?:\$|USD\s*|USDC\s*|USDG\s*)([0-9][0-9,]*(?:\.\d+)?)")
-DEMAND=re.compile(r"(?i)(?:looking for|need|seeking|hiring|wanted|want to hire|contracting|paid)\\s+(?:an?\\s+)?(?:consultant|freelancer|contractor|developer|engineer|marketer|marketing expert|crm expert|salesforce expert|hubspot expert|automation expert|ai expert|writer|analyst|researcher|help|work|task|bounty)")
+DEMAND=re.compile(r"(?i)(?:looking for|need|seeking|hiring|wanted|want to hire|contracting|paid)[^.\\n]{0,100}(?:consultant|freelancer|contractor|developer|engineer|marketer|marketing|crm|salesforce|hubspot|automation|ai|api|writer|analyst|researcher|help|work|task|bounty)")
 
 def now(): return datetime.datetime.now(datetime.timezone.utc).isoformat()
 
@@ -160,6 +160,7 @@ def oneforma():
         if len(title)<4:continue
         frag=s[m.start():m.start()+7000]
         text=clean_text(frag)
+        if BAD.search(title+" "+text): continue
         if "India" not in text and "Remote" not in text:continue
         amt=amount_guess(text)
         if amt<=0:continue
