@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import concurrent.futures, datetime, html, json, os, re, urllib.parse, urllib.request
+import concurrent.futures, datetime, html, json, os, re, urllib.parse, urllib.request, xml.etree.ElementTree as ET
 
 TOKEN=os.getenv("GITHUB_TOKEN","")
 HEADERS={"User-Agent":"revenue-command-runner/2.0","Accept":"application/json,text/html;q=0.9,*/*;q=0.8"}
@@ -306,10 +306,247 @@ def security_programs():
     for x in out:uniq[(x["amount_guess"],x["title"])]=x
     return sorted(uniq.values(),key=lambda x:x["score"],reverse=True)[:10]
 
+
+def remoteok():
+    data=get_json("https://remoteok.com/api")
+    out=[]
+    for x in data[1:] if isinstance(data,list) else []:
+        if not isinstance(x,dict): continue
+        title=x.get("position") or ""
+        tags=" ".join(x.get("tags") or [])
+        txt=" ".join([title,x.get("company") or "",tags,x.get("description") or ""])
+        if BAD.search(txt) or fit_score(txt)==0: continue
+        salary_max=float(x.get("salary_max") or 0)
+        salary_min=float(x.get("salary_min") or 0)
+        amt=salary_max or salary_min
+        fit=fit_score(txt)
+        out.append({"source":"remoteok","kind":"contract-job","title":title,
+          "company":x.get("company"),"url":x.get("url") or x.get("apply_url") or "https://remoteok.com/",
+          "amount_guess":amt,"amount_basis":"annual_salary_if_disclosed","fit":fit,
+          "score":round((fit+1)*120 + min(amt,250000)*0.002,2),
+          "date":x.get("date"),"action":"APPLY"})
+    return sorted(out,key=lambda x:x["score"],reverse=True)[:25]
+
+def arbeitnow():
+    data=get_json("https://www.arbeitnow.com/api/job-board-api")
+    out=[]
+    for x in data.get("data",[]):
+        title=x.get("title") or ""
+        desc=clean_text(x.get("description") or "")
+        txt=title+" "+desc+" "+" ".join(x.get("tags") or [])
+        if BAD.search(txt) or fit_score(txt)==0: continue
+        remote=bool(x.get("remote"))
+        fit=fit_score(txt)
+        out.append({"source":"arbeitnow","kind":"contract-job","title":title,
+          "company":x.get("company_name"),"url":x.get("url"),
+          "amount_guess":amount_guess(txt),"fit":fit,"remote":remote,
+          "score":round((fit+1)*90 + (50 if remote else 0),2),
+          "created_at":x.get("created_at"),"action":"APPLY"})
+    return sorted(out,key=lambda x:x["score"],reverse=True)[:25]
+
+def remotive():
+    data=get_json("https://remotive.com/api/remote-jobs?limit=100")
+    out=[]
+    for x in data.get("jobs",[]):
+        title=x.get("title") or ""
+        desc=clean_text(x.get("description") or "")
+        txt=title+" "+desc+" "+(x.get("candidate_required_location") or "")
+        if BAD.search(txt) or fit_score(txt)==0: continue
+        loc=(x.get("candidate_required_location") or "").lower()
+        if loc and not any(k in loc for k in ["worldwide","anywhere","global","india","asia","apac"]): continue
+        salary=x.get("salary") or ""
+        fit=fit_score(txt)
+        out.append({"source":"remotive","kind":"contract-job","title":title,
+          "company":x.get("company_name"),"url":x.get("url"),
+          "amount_guess":amount_guess(salary),"amount_text":salary,"fit":fit,
+          "score":round((fit+1)*110 + amount_guess(salary)*0.01,2),
+          "publication_date":x.get("publication_date"),"action":"APPLY"})
+    return sorted(out,key=lambda x:x["score"],reverse=True)[:25]
+
+def freelancer():
+    data=get_json("https://www.freelancer.com/api/projects/0.1/projects/active/?compact=true&limit=100")
+    out=[]
+    for x in (data.get("result") or {}).get("projects",[]):
+        title=x.get("title") or ""
+        desc=x.get("preview_description") or ""
+        txt=title+" "+desc
+        if BAD.search(txt): continue
+        fit=fit_score(txt)
+        if fit==0: continue
+        budget=x.get("budget") or {}
+        cur=x.get("currency") or {}
+        mx=float(budget.get("maximum") or 0)
+        mn=float(budget.get("minimum") or 0)
+        rate=float(cur.get("exchange_rate") or 0)
+        usd=(mx or mn)*rate if rate else 0
+        bids=(x.get("bid_stats") or {}).get("bid_count") or 0
+        score=usd*(1+0.12*fit)/(1+0.08*float(bids))
+        out.append({"source":"freelancer","kind":"freelance","title":title,
+          "url":"https://www.freelancer.com/projects/"+str(x.get("id")),
+          "amount_guess":round(usd,2),"currency":cur.get("code"),"budget_native":budget,
+          "fit":fit,"bids":bids,"score":round(score,2),"urgent":bool(x.get("urgent")),"action":"APPLY"})
+    return sorted(out,key=lambda x:x["score"],reverse=True)[:30]
+
+def braintrust():
+    data=get_json("https://app.usebraintrust.com/api/jobs")
+    out=[]
+    for x in data.get("results",[]):
+        title=x.get("title") or ""
+        skills=" ".join(z.get("name","") for z in (x.get("main_skills") or []) if isinstance(z,dict))
+        txt=title+" "+skills
+        if BAD.search(txt) or fit_score(txt)==0: continue
+        try: lo=float(x.get("budget_minimum_usd") or 0)
+        except: lo=0
+        try: hi=float(x.get("budget_maximum_usd") or 0)
+        except: hi=0
+        rate=hi or lo
+        fit=fit_score(txt)
+        out.append({"source":"braintrust","kind":"paid-hourly","title":title,
+          "company":((x.get("employer") or {}).get("name")),
+          "url":"https://app.usebraintrust.com/jobs/"+str(x.get("id")),
+          "amount_guess":rate,"amount_basis":x.get("payment_type") or "hourly",
+          "fit":fit,"score":round(rate*12*(1+0.1*fit),2),"action":"APPLY"})
+    return sorted(out,key=lambda x:x["score"],reverse=True)[:25]
+
+def jobicy():
+    data=get_json("https://jobicy.com/api/v2/remote-jobs?count=50")
+    out=[]
+    for x in data.get("jobs",[]):
+        title=x.get("jobTitle") or ""
+        desc=clean_text(x.get("jobDescription") or "")
+        txt=title+" "+desc+" "+str(x.get("jobGeo") or "")
+        if BAD.search(txt) or fit_score(txt)==0: continue
+        geo=str(x.get("jobGeo") or "").lower()
+        if geo and not any(k in geo for k in ["anywhere","worldwide","global","india","asia","apac"]): continue
+        try: hi=float(x.get("annualSalaryMax") or 0)
+        except: hi=0
+        try: lo=float(x.get("annualSalaryMin") or 0)
+        except: lo=0
+        amt=hi or lo
+        fit=fit_score(txt)
+        out.append({"source":"jobicy","kind":"contract-job","title":title,
+          "company":x.get("companyName"),"url":x.get("url"),
+          "amount_guess":amt,"amount_basis":"annual_salary_if_disclosed","fit":fit,
+          "score":round((fit+1)*100 + min(amt,250000)*0.002,2),
+          "pubDate":x.get("pubDate"),"action":"APPLY"})
+    return sorted(out,key=lambda x:x["score"],reverse=True)[:25]
+
+def wwr():
+    xml=fetch("https://weworkremotely.com/remote-jobs.rss")
+    root=ET.fromstring(xml)
+    out=[]
+    for item in root.findall(".//item"):
+        title=item.findtext("title") or ""
+        desc=clean_text(item.findtext("description") or "")
+        txt=title+" "+desc
+        if BAD.search(txt) or fit_score(txt)==0: continue
+        region=item.findtext("region") or ""
+        if region and "anywhere" not in region.lower() and "world" not in region.lower(): continue
+        fit=fit_score(txt)
+        out.append({"source":"wwr","kind":"contract-job","title":title,
+          "url":item.findtext("link"),"amount_guess":amount_guess(txt),"fit":fit,
+          "region":region,"score":round((fit+1)*95,2),
+          "pubDate":item.findtext("pubDate"),"action":"APPLY"})
+    return sorted(out,key=lambda x:x["score"],reverse=True)[:25]
+
+def himalayas():
+    data=get_json("https://himalayas.app/jobs/api")
+    out=[]
+    for x in data.get("jobs",[]):
+        title=x.get("title") or ""
+        desc=x.get("description") or x.get("excerpt") or ""
+        txt=title+" "+clean_text(desc)
+        if BAD.search(txt) or fit_score(txt)==0: continue
+        locs=" ".join(x.get("locationRestrictions") or []) if isinstance(x.get("locationRestrictions"),list) else str(x.get("locationRestrictions") or "")
+        low=locs.lower()
+        if low and not any(k in low for k in ["worldwide","anywhere","global","india","asia","apac"]): continue
+        fit=fit_score(txt)
+        try: hi=float(x.get("maxSalary") or 0)
+        except: hi=0
+        try: lo=float(x.get("minSalary") or 0)
+        except: lo=0
+        amt=hi or lo
+        out.append({"source":"himalayas","kind":"contract-job","title":title,
+          "company":x.get("companyName"),"url":x.get("applicationLink") or x.get("url"),
+          "amount_guess":amt,"fit":fit,
+          "score":round((fit+1)*100 + min(amt,250000)*0.002,2),
+          "postedAt":x.get("publishedAt") or x.get("createdAt"),"action":"APPLY"})
+    return sorted(out,key=lambda x:x["score"],reverse=True)[:25]
+
+def devpost_api():
+    data=get_json("https://devpost.com/api/hackathons?status[]=open&order_by=deadline")
+    out=[]
+    for x in data.get("hackathons",[]):
+        title=x.get("title") or ""
+        themes=" ".join(z.get("name","") for z in (x.get("themes") or []) if isinstance(z,dict))
+        txt=title+" "+themes
+        amt=amount_guess(clean_text(x.get("prize_amount") or ""))
+        if amt<=0 or BAD.search(txt): continue
+        fit=fit_score(txt)
+        out.append({"source":"devpost","kind":"challenge","title":title,
+          "url":x.get("url"),"amount_guess":amt,"fit":fit,
+          "time_left":x.get("time_left_to_submission"),
+          "score":round(amt*(0.15+0.03*fit),2),"action":"VERIFY"})
+    return sorted(out,key=lambda x:x["score"],reverse=True)[:20]
+
+def hn_intent():
+    queries=["looking for consultant","need consultant","seeking contractor","looking for freelancer",
+      "need hubspot","need salesforce","need crm","need automation","need marketer",
+      "looking for marketing","need api integration","need ai automation","hiring contractor"]
+    out={}
+    now_i=int(datetime.datetime.now(datetime.timezone.utc).timestamp())
+    for q in queries:
+        url="https://hn.algolia.com/api/v1/search_by_date?"+urllib.parse.urlencode({"query":q,"tags":"story","hitsPerPage":20})
+        data=get_json(url)
+        for h in data.get("hits",[]):
+            created=int(h.get("created_at_i") or 0)
+            age_h=(now_i-created)/3600 if created else 9999
+            if age_h>336: continue
+            title=h.get("title") or ""
+            body=clean_text(h.get("story_text") or "")
+            txt=title+" "+body
+            fit=fit_score(txt)
+            if fit==0 or BAD.search(txt): continue
+            amt=amount_guess(txt)
+            obj=h.get("objectID")
+            link=h.get("url") or ("https://news.ycombinator.com/item?id="+str(obj))
+            score=(fit+1)*180/(1+age_h/36) + min(amt,10000)*0.05
+            out[link]={"source":"hn-intent","kind":"buyer-intent","title":title or body[:180],
+              "url":link,"amount_guess":amt,"fit":fit,"age_hours":round(age_h,1),
+              "points":h.get("points"),"comments":h.get("num_comments"),
+              "score":round(score,2),"action":"VERIFY_CONTACT"}
+    return sorted(out.values(),key=lambda x:x["score"],reverse=True)[:30]
+
+def github_intent():
+    qs=['is:issue is:open "looking for consultant" updated:>=2026-09-01',
+      'is:issue is:open "need consultant" updated:>=2026-09-01',
+      'is:issue is:open "paid" "help wanted" updated:>=2026-09-01',
+      'is:issue is:open "need help" automation updated:>=2026-09-01',
+      'is:issue is:open "contractor" updated:>=2026-09-01']
+    out={}
+    for q in qs:
+        d=gh_api("/search/issues",{"q":q,"per_page":30,"sort":"updated","order":"desc"})
+        for it in d.get("items",[]):
+            if it.get("assignees"): continue
+            txt=(it.get("title") or "")+" "+(it.get("body") or "")
+            fit=fit_score(txt)
+            if fit==0 or BAD.search(txt): continue
+            url=it.get("html_url")
+            amt=amount_guess(txt)
+            comments=int(it.get("comments") or 0)
+            score=(fit+1)*120 + min(amt,10000)*0.05 - min(comments,20)*2
+            out[url]={"source":"github-intent","kind":"buyer-intent","title":it.get("title"),
+              "url":url,"amount_guess":amt,"fit":fit,"comments":comments,
+              "updated_at":it.get("updated_at"),"score":round(score,2),"action":"VERIFY_CONTACT"}
+    return sorted(out.values(),key=lambda x:x["score"],reverse=True)[:30]
+
 SOURCES=[
   ("github",github_paid),("laborx",laborx),("oneforma",oneforma),
-  ("superteam",superteam),("rfp",settle_rfps),("devpost",devpost),
-  ("security",security_programs)
+  ("superteam",superteam),("rfp",settle_rfps),("devpost",devpost_api),
+  ("security",security_programs),("remoteok",remoteok),("arbeitnow",arbeitnow),
+  ("remotive",remotive),("freelancer",freelancer),("braintrust",braintrust),
+  ("jobicy",jobicy),("wwr",wwr),("himalayas",himalayas),
+  ("hn-intent",hn_intent),("github-intent",github_intent)
 ]
 with concurrent.futures.ThreadPoolExecutor(max_workers=len(SOURCES)) as ex:
     futs={ex.submit(safe,name,fn):name for name,fn in SOURCES}
@@ -362,13 +599,16 @@ result={
  "source_status":[{k:v for k,v in s.items() if k!="items"} for s in sorted(source_results,key=lambda x:x["source"])],
  "queue":{
    "high_ticket":[x for x in all_items if x.get("amount_guess",0)>=2500][:12],
-   "fast_cash":[x for x in all_items if x.get("kind") in ("paid-hourly","freelance")][:12],
-   "all_ranked":all_items[:35]
+   "fast_cash":[x for x in all_items if x.get("kind") in ("paid-hourly","freelance")][:20],
+   "buyer_intent":[x for x in all_items if x.get("kind")=="buyer-intent"][:20],
+   "contract_jobs":[x for x in all_items if x.get("kind")=="contract-job"][:20],
+   "all_ranked":all_items[:60]
  },
  "rules":{
    "count_as_revenue":["authoritative external settlement","payer-confirmed withdrawal-ready balance"],
    "do_not_count":["claim","bid","PR","listing","headline reward","self-transfer","402","unaccepted deliverable"],
-   "blocked_lane_policy":"PARK_AND_CONTINUE"
+   "blocked_lane_policy":"PARK_AND_CONTINUE",
+   "exploration_policy":"Continuously add new public payer, freelance, challenge, RFP and buyer-intent sources; failed or blocked sources are parked, not retried aggressively."
  }
 }
 print(json.dumps(result,indent=2))
