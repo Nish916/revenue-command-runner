@@ -6,7 +6,7 @@ HEADERS={"User-Agent":"revenue-command-runner/2.0","Accept":"application/json,te
 if TOKEN:
     HEADERS["Authorization"]="Bearer "+TOKEN
 
-BAD=re.compile(r"(?i)(casino|gambl|deposit.*to earn|stake.*to earn|flash usdt|captcha bypass|identity rental|account sale|buy account|sniper bot|wash trade|self[- ]fund)")
+BAD=re.compile(r"(?i)(casino|gambl|deposit.*to earn|stake.*to earn|flash usdt|captcha bypass|identity rental|account sale|buy account|developer account verification|account verification|bulk sms|survey respondents|email leads|lead list|scrape private|private contacts|sniper bot|wash trade|self[- ]fund)")
 FIT=re.compile(r"(?i)(python|javascript|typescript|api|integration|automation|ai|agent|research|technical writing|documentation|data|analytics|seo|marketing|growth|crm|salesforce|hubspot|qa|testing|web|node|content)")
 MONEY=re.compile(r"(?i)(?:\$|USD\s*|USDC\s*|USDG\s*)([0-9][0-9,]*(?:\.\d+)?)")
 
@@ -134,6 +134,9 @@ def laborx():
             try:amt=float(raw_amt) if raw_amt is not None else amount_guess(txt)
             except:amt=amount_guess(txt)
             if amt<=0:continue
+            low=txt.lower()
+            geo_exclude=["italy only","uk only","united kingdom only","in the uk","uk welcome","brazil only","brasil real","us only","u.s. only","need us man","united states only","senegal","togo","benin","portugal company formation"]
+            if any(g in low for g in geo_exclude): continue
             unit=val.get("unitText") or ""
             fit=fit_score(txt)
             score=amt*(1+0.1*fit)
@@ -193,6 +196,28 @@ def superteam():
     for x in out:uniq[(x["amount_guess"],x["title"])]=x
     return sorted(uniq.values(),key=lambda x:x["score"],reverse=True)[:15]
 
+def inspect_rfp_detail(url):
+    try:
+        page=fetch(url)
+        text=clean_text(page)
+        req=""
+        m=re.search(r'KEY REQUIREMENTS(.*?)(?:BUDGET|CONTRACT DURATION|TIMELINE)',text,re.I|re.S)
+        if m: req=m.group(1).strip()[:3500]
+        hard=[]
+        patterns=[
+          r'must be registered with[^.]{0,180}',r'must be licensed[^.]{0,180}',
+          r'must be located[^.]{0,180}',r'must have (?:an? )?(?:office|physical presence)[^.]{0,180}',
+          r'local vendor[^.]{0,180}',r'ability to travel[^.]{0,180}',
+          r'must have experience in[^.]{0,220}'
+        ]
+        for pat in patterns:
+            for mm in re.finditer(pat,req,re.I): hard.append(mm.group(0).strip())
+        restricted=any(re.search(r'(?i)(must be registered with|must be located|must have (?:an? )?(?:office|physical presence)|local vendor)',h) for h in hard)
+        gap=any(re.search(r'(?i)must have experience in',h) for h in hard)
+        return {"requirements":req[:1800],"hard_flags":hard[:8],"restricted":restricted,"requirement_gap":gap}
+    except Exception as e:
+        return {"detail_error":repr(e),"restricted":False,"requirement_gap":False,"hard_flags":[]}
+
 def settle_rfps():
     urls=[
       "https://usesettle.com/rfp-hunter/categories/marketing-advertising-and-social-media",
@@ -201,22 +226,47 @@ def settle_rfps():
     out=[]
     for base in urls:
         s=fetch(base)
-        txt=clean_text(s)
-        for m in MONEY.finditer(txt):
-            try:amt=float(m.group(1).replace(",",""))
-            except:continue
-            if not (1000<=amt<=500000):continue
-            chunk=txt[max(0,m.start()-300):m.start()+550]
-            if BAD.search(chunk):continue
-            fit=fit_score(chunk)
+        for m in re.finditer(r'<a[^>]+href=["\'](/rfp-hunter/[^"\']+)["\'][^>]*>(.*?)</a>',s,re.I|re.S):
+            href=m.group(1); card=m.group(2)
+            title_m=re.search(r'<h3[^>]*>(.*?)</h3>',card,re.I|re.S)
+            if not title_m: continue
+            title=clean_text(title_m.group(1))
+            desc_m=re.search(r'<p[^>]*>(.*?)</p>',card,re.I|re.S)
+            desc=clean_text(desc_m.group(1)) if desc_m else ""
+            pairs={clean_text(a).rstrip(':'):clean_text(b) for a,b in re.findall(r'<dt[^>]*>(.*?)</dt>\s*<dd[^>]*>(.*?)</dd>',card,re.I|re.S)}
+            budget_text=pairs.get('Budget','')
+            amt=amount_guess(budget_text)
+            if not (1000<=amt<=500000): continue
+            deadline=pairs.get('Deadline','')
+            issuer=pairs.get('Issuer','')
+            location=pairs.get('Location','')
+            txt=' '.join([title,desc,issuer,location])
+            if BAD.search(txt): continue
+            fit=fit_score(txt)
             out.append({
-              "source":"rfp","kind":"consulting-rfp","title":chunk[:260],
-              "url":base,"amount_guess":amt,"fit":fit,
+              "source":"rfp","kind":"consulting-rfp","title":title,
+              "url":urllib.parse.urljoin(base,href),"amount_guess":amt,
+              "issuer":issuer,"deadline":deadline,"location":location,
+              "description":desc[:500],"fit":fit,
               "score":round(amt*(1+0.12*fit)*0.45,2),"action":"VERIFY"
             })
-    uniq={}
-    for x in out:uniq[(x["amount_guess"],x["title"])]=x
-    return sorted(uniq.values(),key=lambda x:x["score"],reverse=True)[:20]
+    uniq={x["url"]:x for x in out}
+    ranked=sorted(uniq.values(),key=lambda x:x["score"],reverse=True)[:18]
+    for x in ranked:
+        detail=inspect_rfp_detail(x["url"])
+        x["hard_flags"]=detail.get("hard_flags",[])
+        x["requirements"]=detail.get("requirements","")
+        if detail.get("restricted"):
+            x["action"]="PARK"
+            x["eligibility"]="RESTRICTED_OR_LOCAL_REGISTRATION"
+            x["score"]=round(x["score"]*0.05,2)
+        elif detail.get("requirement_gap"):
+            x["action"]="VERIFY_GAP"
+            x["eligibility"]="REQUIREMENT_GAP"
+            x["score"]=round(x["score"]*0.25,2)
+        else:
+            x["eligibility"]="POSSIBLE_UNVERIFIED"
+    return sorted(ranked,key=lambda x:x["score"],reverse=True)
 
 def devpost():
     s=fetch("https://devpost.com/hackathons")
