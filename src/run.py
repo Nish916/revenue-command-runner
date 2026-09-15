@@ -702,7 +702,7 @@ result={
  },
  "source_status":[{k:v for k,v in s.items() if k!="items"} for s in sorted(source_results,key=lambda x:x["source"])],
  "queue":{
-   "first_cash":[x for x in all_items if x.get("pay_certainty")=="PUBLISHED_PAY_SCREENING_REQUIRED"][:20],
+   "first_cash":[x for x in all_items if x.get("pay_certainty")=="PUBLISHED_PAY_SCREENING_REQUIRED" and x.get("kind") in ("paid-trial","paid-hourly")][:20],
    "high_ticket":[x for x in all_items if x.get("amount_guess",0)>=2500][:12],
    "fast_cash":[x for x in all_items if x.get("kind") in ("paid-hourly","freelance")][:20],
    "buyer_intent":[x for x in all_items if x.get("kind")=="buyer-intent"][:20],
