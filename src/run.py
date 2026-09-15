@@ -331,7 +331,7 @@ result={
    "rails":[
      {"name":"INR bank/UPI","status":"AVAILABLE_ON_INVOICE","public_sensitive_details":False},
      {"name":"Wise","status":"ACCOUNT_EXISTS_VERIFY_RECEIVING_DETAILS","public_sensitive_details":False},
-     {"name":"PayPal","status":"KYC_REQUIRED_BEFORE_RECEIVE_WITHDRAW","public_sensitive_details":False},
+     {"name":"PayPal","status":"KYC_SUBMITTED_REVIEW_PENDING_DO_NOT_USE","public_sensitive_details":False},
      {"name":"Toku/Stripe Express","status":"PAYOUT_INFO_REQUIRED","public_sensitive_details":False},
      {"name":"USDC/Base via Coinbase","status":"TRAVEL_RULE_SENDER_INFO_REQUIRED","public_sensitive_details":False}
    ]
