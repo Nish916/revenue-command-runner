@@ -6,6 +6,8 @@ on:
 
 permissions:
   contents: read
+  issues: write
+  models: read
 
 concurrency:
   group: revenue-command-runner
@@ -17,11 +19,53 @@ jobs:
     timeout-minutes: 4
     steps:
       - uses: actions/checkout@v4
+
       - name: Execute revenue command
         run: python3 src/run.py | tee result.json
+
+      - name: AI decision layer
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 src/plan.py | tee /tmp/plan.txt
+
+      - name: Update dashboard issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          {
+            echo '# Cloud Revenue Command Dashboard'
+            echo
+            echo 'Updated: '`date -u +"%Y-%m-%d %H:%M:%S UTC"`
+            echo
+            echo '## AI decision'
+            cat plan.md
+            echo
+            echo '## Live evidence'
+            echo '~~~json'
+            cat result.json
+            echo '~~~'
+          } > /tmp/dashboard.md
+
+          ISSUE=$(gh issue list --repo "${{ github.repository }}" --state open --search '"Cloud Revenue Command Dashboard" in:title' --json number --jq '.[0].number // empty')
+          if [ -z "$ISSUE" ]; then
+            gh issue create --repo "${{ github.repository }}" --title "Cloud Revenue Command Dashboard" --body-file /tmp/dashboard.md
+          else
+            gh issue edit "$ISSUE" --repo "${{ github.repository }}" --body-file /tmp/dashboard.md
+          fi
+
       - name: Summary
         run: |
           echo '## Revenue Command Runner' >> "$GITHUB_STEP_SUMMARY"
+          cat plan.md >> "$GITHUB_STEP_SUMMARY"
+          echo >> "$GITHUB_STEP_SUMMARY"
           echo '~~~json' >> "$GITHUB_STEP_SUMMARY"
           cat result.json >> "$GITHUB_STEP_SUMMARY"
           echo '~~~' >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: revenue-command-${{ github.run_id }}
+          path: |
+            result.json
+            plan.md
+          retention-days: 7
