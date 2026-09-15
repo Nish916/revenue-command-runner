@@ -573,7 +573,7 @@ def nearskill():
         try:
             page=grab(url)
             job=None
-            for m in re.finditer(r'<script[^>]+type=["\\\']application/ld\\+json["\\\'][^>]*>(.*?)</script>',page,re.I|re.S):
+            for m in re.finditer(r'<script[^>]+type=["\']application/ld\+json["\'][^>]*>(.*?)</script>',page,re.I|re.S):
                 try:d=json.loads(html.unescape(m.group(1)))
                 except Exception:continue
                 if isinstance(d,dict) and d.get("@type")=="JobPosting": job=d; break
