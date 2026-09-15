@@ -6,7 +6,7 @@ HEADERS={"User-Agent":"revenue-command-runner/2.0","Accept":"application/json,te
 if TOKEN:
     HEADERS["Authorization"]="Bearer "+TOKEN
 
-BAD=re.compile(r"(?i)(casino|gambl|deposit.*to earn|stake.*to earn|flash usdt|captcha bypass|identity rental|account sale|buy account|developer account verification|account verification|bulk sms|survey respondents|email leads|lead list|scrape private|private contacts|sniper bot|wash trade|self[- ]fund)")
+BAD=re.compile(r"(?i)(casino|gambl|deposit.*to earn|stake.*to earn|flash usdt|captcha bypass|identity rental|account sale|buy account|developer account verification|account verification|trial registration|register account|create account|sign up.*account|bulk sms|survey respondents|email leads|lead list|scrape private|private contacts|sniper bot|wash trade|self[- ]fund)")
 FIT=re.compile(r"(?i)(python|javascript|typescript|api|integration|automation|ai|agent|research|technical writing|documentation|data|analytics|seo|marketing|growth|crm|salesforce|hubspot|qa|testing|web|node|content)")
 MONEY=re.compile(r"(?i)(?:\$|USD\s*|USDC\s*|USDG\s*)([0-9][0-9,]*(?:\.\d+)?)")
 
@@ -480,7 +480,12 @@ def devpost_api():
         title=x.get("title") or ""
         themes=" ".join(z.get("name","") for z in (x.get("themes") or []) if isinstance(z,dict))
         txt=title+" "+themes
-        amt=amount_guess(clean_text(x.get("prize_amount") or ""))
+        prize_text=clean_text(x.get("prize_amount") or "")
+        amt=amount_guess(prize_text)
+        if amt<=0:
+            nums=re.findall(r'[0-9][0-9,]*(?:\\.[0-9]+)?',prize_text)
+            try: amt=max(float(n.replace(",","")) for n in nums) if nums else 0
+            except: amt=0
         if amt<=0 or BAD.search(txt): continue
         fit=fit_score(txt)
         out.append({"source":"devpost","kind":"challenge","title":title,
@@ -506,7 +511,7 @@ def hn_intent():
             body=clean_text(h.get("story_text") or "")
             txt=title+" "+body
             fit=fit_score(txt)
-            if fit==0 or BAD.search(txt): continue
+            if fit==0 or BAD.search(txt) or not DEMAND.search(txt): continue
             amt=amount_guess(txt)
             obj=h.get("objectID")
             link=h.get("url") or ("https://news.ycombinator.com/item?id="+str(obj))
@@ -530,7 +535,7 @@ def github_intent():
             if it.get("assignees"): continue
             txt=(it.get("title") or "")+" "+(it.get("body") or "")
             fit=fit_score(txt)
-            if fit==0 or BAD.search(txt): continue
+            if fit==0 or BAD.search(txt) or not DEMAND.search(txt): continue
             url=it.get("html_url")
             amt=amount_guess(txt)
             comments=int(it.get("comments") or 0)
