@@ -575,6 +575,83 @@
       "mode": "AUTH_REQUIRED",
       "url": "https://userq.com/in/",
       "notes": "India-facing remote user-testing panel; tester availability and qualification vary."
+    },
+    {
+      "name": "RBI UDGAM",
+      "category": "unclaimed-deposit",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://udgam.rbi.org.in/unclaimed-deposits/",
+      "notes": "Official RBI portal for tracing unclaimed bank deposits/accounts; claim requires identity/bank process."
+    },
+    {
+      "name": "SEBI MITRA",
+      "category": "unclaimed-investment",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://app.mfcentral.com/links/inactive-folios",
+      "notes": "Officially referenced platform for tracing inactive/unclaimed mutual fund folios."
+    },
+    {
+      "name": "IEPF Authority",
+      "category": "unclaimed-securities",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://www.iepf.gov.in/",
+      "notes": "Unclaimed dividends/shares/securities recovery; legal claimant and documentation verification required."
+    },
+    {
+      "name": "Income Tax Refund Status",
+      "category": "tax-refund",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://www.incometax.gov.in/",
+      "notes": "Official e-filing refund status/reissue checks; do not infer refund without account evidence."
+    },
+    {
+      "name": "IRDAI Bima Bharosa Unclaimed Amount",
+      "category": "unclaimed-insurance",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://bimabharosa.irdai.gov.in/Home/UnclaimedAmount",
+      "notes": "Official IRDAI unclaimed insurance amount lookup/insurer links; claimant verification required."
+    },
+    {
+      "name": "EPFO / Inoperative PF Accounts",
+      "category": "employment-recovery",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://www.epfindia.gov.in/",
+      "notes": "Trace/claim employee provident-fund balances and inoperative accounts through official EPFO flows."
+    },
+    {
+      "name": "Stripe Connect / Toku payout recovery",
+      "category": "payout-recovery",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://connect.stripe.com/",
+      "notes": "Connected-email signal indicates payout details are incomplete for Toku; verify balance before calling value claimable. Banking/KYC updates require user approval."
+    },
+    {
+      "name": "Broker / Depository corporate-action recovery",
+      "category": "investment-recovery",
+      "mode": "AUTH_REQUIRED",
+      "url": "https://investor.sebi.gov.in/",
+      "notes": "Check broker/depository balances, unpaid dividends, redemptions and corporate-action entitlements through official channels/CAS."
+    },
+    {
+      "name": "Employment F&F / reimbursements",
+      "category": "employment-recovery",
+      "mode": "AUTH_REQUIRED",
+      "url": "",
+      "notes": "Search verified employer/payroll threads for unpaid F&F, reimbursements, incentives, gratuity or leave encashment; never infer entitlement without evidence."
+    },
+    {
+      "name": "Travel refund & compensation recovery",
+      "category": "consumer-recovery",
+      "mode": "DISCOVERY_TARGET",
+      "url": "",
+      "notes": "Check eligible flight/train/hotel cancellation, delay, duplicate charge, voucher or refund entitlements from official provider rules only."
+    },
+    {
+      "name": "Warranty / recall / service-credit recovery",
+      "category": "consumer-recovery",
+      "mode": "DISCOVERY_TARGET",
+      "url": "",
+      "notes": "Official warranty, recall, service outage credit, subscription refund or security-deposit recovery where the user is actually eligible."
     }
   ]
 }
