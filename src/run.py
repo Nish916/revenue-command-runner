@@ -721,8 +721,8 @@ result={
    "intent_dictionary_file":"config/intent-signals.json"
  },
  "payment_floor":{
-   "mode":"ZERO_HOUR_EMERGENCY",
-   "target":"Maximize probability of at least one legitimate external settlement per hour; never guarantee it.",
+   "mode":"SUPER_INFINITY_AGGRESSIVE",
+   "target":"Maximize legitimate externally funded settlement velocity with payer-first execution; never guarantee income.",
    "priority_order":[
      "accepted_or_funded_work",
      "paid_qualification_or_hourly_task",
@@ -731,9 +731,9 @@ result={
      "verified_unassigned_bounty",
      "high_ticket_rfp"
    ],
-   "rotation_rule":"Never spend two consecutive cycles on the same blocked source without new evidence.",
-   "high_ticket_attention_cap_pct_until_floor":25,
-   "minimum_independent_payer_lanes":5,
+   "rotation_rule":"Immediately rotate any blocked/non-executable source; never spend two consecutive cycles without new payer evidence.",
+   "high_ticket_attention_cap_pct_until_floor":10,
+   "minimum_independent_payer_lanes":8,
    "guarantee_definition":"Only accepted/funded fixed-pay work with objective acceptance and no remaining payer discretion can be called guarantee-ready; discovery/application alone never qualifies.",
    "cycle_output":["NOW","NEXT","PARK"]
  },

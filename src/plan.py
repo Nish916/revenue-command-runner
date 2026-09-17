@@ -19,9 +19,9 @@ def deterministic():
     catalog=result.get("exploration_catalog") or {}
 
     lines=[
-      "## NO-ZERO-HOUR PAYMENT CONTROLLER",
-      f"- MODE: {floor.get('mode','ZERO_HOUR_EMERGENCY')}",
-      f"- TARGET: {floor.get('target','Maximize probability of at least one legitimate external settlement per hour; never guarantee it.')}",
+      "## SUPER INFINITY AGGRESSIVE REVENUE CONTROLLER",
+      f"- MODE: {floor.get('mode','SUPER_INFINITY_AGGRESSIVE')}",
+      f"- TARGET: {floor.get('target','Maximize legitimate externally funded settlement velocity with payer-first execution; never guarantee income.')}",
       f"- VERIFIED: RustChain visible total is {settle.get('rustchain_total_rtc')} RTC.",
       f"- VERIFIED: Cognitive-OS PR #53 state is {(sub.get('cognitive_pr_53') or {}).get('state','unknown')}.",
       f"- VERIFIED: RustChain #2259 state is {(sub.get('rustchain_2259') or {}).get('state','unknown')}.",
@@ -68,9 +68,9 @@ def deterministic():
       "- GUARANTEE GATE: Never call an opportunity guaranteed before payer acceptance/allocation. Once fixed-pay funded work is accepted and completion criteria are under our control, it outranks every search lane.",
       "- EXECUTION LAW 1: A pending proposal, PR, claim, review, KYC review or unpaid deliverable never satisfies the hourly floor.",
       "- EXECUTION LAW 2: If no settlement is verified, prioritize in this order: ACCEPTED/FUNDED work > paid qualification/task > prepaid fixed-scope service > warm buyer invoice/milestone > new verified bounty > high-ticket proposal.",
-      "- EXECUTION LAW 3: Spend no more than 25% of a cycle on high-ticket research until a recurring cash floor exists.",
+      "- EXECUTION LAW 3: Spend no more than 10% of a cycle on high-ticket research until a recurring cash floor exists.",
       "- EXECUTION LAW 4: Never spend two consecutive cycles on the same blocked payer/source without new evidence. PARK and rotate.",
-      "- EXECUTION LAW 5: Maintain at least 5 independent payer lanes. If fewer than 5 survive filters, discovery expansion becomes the first action.",
+      "- EXECUTION LAW 5: Maintain at least 8 independent payer lanes. If fewer than 8 survive filters, discovery expansion becomes the first action.",
       "- EXECUTION LAW 6: For direct client work, ask for upfront payment or funded milestone before substantial delivery.",
       "- EXECUTION LAW 7: Every cycle must produce NOW / NEXT / PARK. NOW must be a concrete action tied to a payer, not 'monitor'.",
       "- NEXT: Push the best authenticated APPLY/WORK lane; if authentication is unavailable, prepare exact submission/deliverable and rotate to another executable lane.",
@@ -80,10 +80,10 @@ def deterministic():
     return "\n".join(lines)
 
 def call_openai(api_key):
-    prompt="""You are the NO-ZERO-HOUR PAYMENT CONTROLLER for an India-based operator.
+    prompt="""You are the SUPER_INFINITY_AGGRESSIVE REVENUE CONTROLLER for an India-based operator.
 
 MISSION:
-Maximize the probability of at least one legitimate externally funded settlement every hour. This is a target, not a guarantee. The long-term upside target is large, but until a recurring cash floor exists, do NOT let high-ticket research consume the cycle.
+Run SUPER_INFINITY_AGGRESSIVE payer-first execution. Maximize legitimate externally funded settlement velocity. This is a target, never a guarantee. Do NOT let research, monitoring, or high-ticket speculation consume the cycle while executable paid work exists.
 
 STRICT PRIORITY ORDER WHEN THE CURRENT HOUR HAS NO VERIFIED SETTLEMENT:
 1. Already ACCEPTED/FUNDED work that can be completed now.
@@ -97,8 +97,8 @@ OPERATING RULES:
 - Pending proposal, PR, claim, review, KYC review, listing, headline reward, 402, self-transfer, or unpaid deliverable = ZERO earned.
 - Never wait on one payer. If blocked, PARK immediately and rotate.
 - Never spend two consecutive cycles on the same blocked source without new evidence.
-- Maintain at least 5 independent payer classes and continuously expand buyer-intent/source beacons.
-- High-ticket research gets max 25% of attention until a recurring floor exists.
+- Maintain at least 8 independent payer classes and continuously expand buyer-intent/source beacons.
+- High-ticket research gets max 10% of attention until a recurring floor exists.
 - Every cycle must output NOW / NEXT / PARK.
 - NOW must identify a concrete payer, exact work, expected payout, and first action. Never say merely "monitor".
 - For direct-client work prefer upfront payment or funded milestone before substantial delivery.

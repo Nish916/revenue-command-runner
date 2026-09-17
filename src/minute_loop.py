@@ -6,6 +6,8 @@ base = json.loads((root / "result.json").read_text())
 queue = base.get("queue") or {}
 first = queue.get("first_cash") or []
 fast = queue.get("fast_cash") or []
+intent = queue.get("buyer_intent") or []
+high = queue.get("high_ticket") or []
 ranked = queue.get("all_ranked") or []
 
 UA = {"User-Agent": "revenue-command-runner-minute/1.0"}
@@ -34,7 +36,9 @@ def settlement():
 def pick(cycle):
     pool = []
     seen = set()
-    for item in first + fast + ranked:
+    primary = first + fast + intent + high
+    fallback = [x for x in ranked if x.get("kind") != "contract-job"]
+    for item in primary + fallback:
         key = (item.get("source"), item.get("url"), item.get("title"))
         if key in seen:
             continue
@@ -76,6 +80,6 @@ out = {
     "start_settlement": start,
     "cycles": cycles,
     "final_delta_rtc": cycles[-1]["settlement_delta_rtc"],
-    "minute_mode": "4 micro-cycles inside each scheduled cloud run",
+    "minute_mode": "SUPER_INFINITY_AGGRESSIVE: 4 payer-first micro-cycles inside each scheduled cloud run",
 }
 (root / "minute_state.json").write_text(json.dumps(out, indent=2, ensure_ascii=False))
