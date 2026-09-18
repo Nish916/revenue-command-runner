@@ -61,7 +61,7 @@ def heartbeat():
     return st,d
 
 def profile():
-    st,d=api('GET','/api/v1/agents/me')
+    st,d=api('GET',f'/api/v1/agents/{AGENT}')
     return d.get('data',{}) if st==200 else {}
 
 def wallet():
@@ -79,6 +79,74 @@ def listings():
 def pending_requests():
     st,d=api('GET','/api/v1/listings/requests/pending')
     return d.get('data',[]) if st==200 else []
+
+def send_message(cid,content):
+    return api('POST',f'/api/v1/contracts/{cid}/messages',{'content':content,'attachments':[]})
+
+def contract_detail(cid):
+    st,d=api('GET',f'/api/v1/contracts/{cid}')
+    return d.get('data',{}) if st==200 else {}
+
+def contract_messages(cid):
+    st,d=api('GET',f'/api/v1/contracts/{cid}/messages')
+    return d.get('data',[]) if st==200 else []
+
+def ollama_generate(prompt,model='qwen3:8b'):
+    body=json.dumps({'model':model,'prompt':prompt,'stream':False,'think':False,'options':{'temperature':0.2}}).encode()
+    req=urllib.request.Request('http://127.0.0.1:11434/api/generate',data=body,headers={'Content-Type':'application/json'},method='POST')
+    with urllib.request.urlopen(req,timeout=240) as r:
+        d=json.load(r)
+    return str(d.get('response') or '').strip()
+
+def maybe_fulfill_contract(c,actions):
+    cid=str(c.get('id'))
+    state=str(c.get('state') or c.get('status') or '').lower()
+    marker=HOME/'.openwork'/f'contract-{cid}.state.json'
+    prior={}
+    if marker.exists():
+        try: prior=json.load(open(marker))
+        except: prior={}
+    if state=='escrow_locked':
+        st,_=api('POST',f'/api/v1/contracts/{cid}/events',{'type':'START_WORK'})
+        actions.append({'type':'START_WORK','contractId':cid,'http':st,'ok':200<=st<300})
+        if 200<=st<300:
+            send_message(cid,'Started. I am reviewing the supplied scope and acceptance criteria now. I will deliver against them or ask one concise clarification if an essential input is missing.')
+            state='in_progress'
+    if state!='in_progress' or prior.get('submitted'):
+        return
+    detail=contract_detail(cid)
+    msgs=contract_messages(cid)
+    scope=json.dumps({'contract':detail,'messages':msgs},ensure_ascii=False)[:24000]
+    if len(scope)<500:
+        return
+    prompt=(
+        'You are fulfilling a paid client task. Use only facts and inputs explicitly supplied in the contract/messages. '
+        'Do not invent test results, URLs, data, citations, or access you do not have. Produce the finished deliverable in clear Markdown matching the acceptance criteria. '
+        'If a critical input is missing, output exactly NEED_MORE_INFO: followed by one concise request.\n\nSCOPE:\n'+scope
+    )
+    try:
+        out=ollama_generate(prompt)
+    except Exception as e:
+        log(f'fulfillment model failed {cid[:8]}: {e!r}')
+        return
+    if out.startswith('NEED_MORE_INFO:'):
+        if not prior.get('asked'):
+            send_message(cid,out[len('NEED_MORE_INFO:'):].strip())
+            marker.write_text(json.dumps({'asked':True,'ts':ts()}))
+            actions.append({'type':'CLARIFICATION_SENT','contractId':cid})
+        return
+    if len(out)<250:
+        return
+    st,dv=api('POST',f'/api/v1/contracts/{cid}/deliverables',{'description':'Completed deliverable against supplied scope and acceptance criteria','outputData':{'markdown':out}})
+    payload=(dv.get('data') or dv) if isinstance(dv,dict) else {}
+    did=payload.get('id') if isinstance(payload,dict) else None
+    if 200<=st<300 and did:
+        st2,_=api('POST',f'/api/v1/contracts/{cid}/events',{'type':'SUBMIT_WORK','deliverableId':did})
+        ok=200<=st2<300
+        actions.append({'type':'SUBMIT_WORK','contractId':cid,'deliverableId':did,'http':st2,'ok':ok})
+        if ok:
+            marker.write_text(json.dumps({'submitted':True,'deliverableId':did,'ts':ts()}))
+            log(f'submitted contract {cid[:8]}')
 
 def ensure_listings(actions):
     if listings(): return
@@ -150,11 +218,18 @@ def execute_jobs(jobs,actions):
 
 def handle_contracts(rows,actions):
     for c in rows:
-        cid=str(c.get('id')); state=str(c.get('state') or c.get('status') or '').lower()
-        if state=='escrow_locked':
-            st,_=api('POST',f'/api/v1/contracts/{cid}/events',{'type':'START_WORK'})
-            actions.append({'type':'START_WORK','contractId':cid,'http':st,'ok':200<=st<300})
-            log(f'start work {cid[:8]} -> {st}')
+        maybe_fulfill_contract(c,actions)
+
+def handle_listing_requests(rows,actions):
+    for r in rows:
+        rid=str(r.get('id') or '')
+        lid=str(r.get('listingId') or (r.get('listing') or {}).get('id') or '')
+        req=str(r.get('requirements') or r.get('message') or '')
+        if not rid or not lid or BAD.search(req):
+            continue
+        st,_=api('POST',f'/api/v1/listings/{lid}/requests/{rid}/respond',{'action':'accept'})
+        actions.append({'type':'LISTING_REQUEST_ACCEPT','requestId':rid,'listingId':lid,'http':st,'ok':200<=st<300})
+        log(f'listing request {rid[:8]} accept -> {st}')
 
 def main():
     with open(LOCK,'w') as lf:
@@ -171,8 +246,12 @@ def main():
         ensure_listings(actions)
         maybe_intro(actions)
         reqs=pending_requests()
+        handle_listing_requests(reqs,actions)
         _,bids=existing_bid_jobs()
-        snap={'ts':ts(),'mode':'AUTHENTICATED_EXECUTOR','profile':{'claimed':bool(p.get('claimedAt')),'trustTierLevel':p.get('trustTierLevel'),'totalEarned':p.get('totalEarned'),'activeContractCount':p.get('activeContractCount'),'healthy':p.get('isHealthy'),'lastHealthPing':p.get('lastHealthPing')},'wallet':w,'inventory':{'total':len(jobs),'funded':len(funded),'claimable':len(claimable)},'current':{'bids':len(bids),'contracts':len(cs),'listings':len(listings()),'pendingListingRequests':len(reqs)},'actions':actions,'truth_rule':'Only funded+claimable/accepted work or settled wallet changes are cash-near. Unfunded listings and salary headlines are research only.'}
+        truth={'ts':ts(),'bids':bids,'contracts':cs,'source':'authenticated_executor'}
+        (HOME/'.openwork/income-state.json').write_text(json.dumps(truth,indent=2))
+        verification=p.get('verification') or {}
+        snap={'ts':ts(),'mode':'AUTHENTICATED_EXECUTOR','profile':{'claimed':bool(p.get('claimedAt') or p.get('isClaimed')),'trustTierLevel':p.get('trustTierLevel'),'verified':verification.get('verified'),'verificationChecks':verification.get('checks'),'totalEarned':p.get('totalEarned'),'activeContractCount':p.get('activeContractCount'),'healthy':p.get('isHealthy'),'lastHealthPing':p.get('lastHealthPing')},'wallet':w,'inventory':{'total':len(jobs),'funded':len(funded),'claimable':len(claimable)},'current':{'bids':len(bids),'contracts':len(cs),'listings':len(listings()),'pendingListingRequests':len(reqs)},'actions':actions,'truth_rule':'Only funded+claimable/accepted work or settled wallet changes are cash-near. Unfunded listings and salary headlines are research only.'}
         STATE.write_text(json.dumps(snap,indent=2))
         log('cycle '+json.dumps({'funded':len(funded),'claimable':len(claimable),'contracts':len(cs),'bids':len(bids),'actions':len(actions),'wallet':w.get('available')}))
 
