@@ -66,7 +66,7 @@ for i in range(4):
     })
     print(json.dumps(cycles[-1], ensure_ascii=False), flush=True)
     if i < 3:
-        time.sleep(55)
+        time.sleep(10)
 
 out = {
     "started_at": cycles[0]["ts"],
@@ -74,6 +74,6 @@ out = {
     "start_settlement": start,
     "cycles": cycles,
     "final_delta_rtc": cycles[-1]["settlement_delta_rtc"],
-    "minute_mode": "DISCOVERY_ONLY: settlement checks + candidate ranking; local authenticated executor performs mutations",
+    "minute_mode": "RAPID_DISCOVERY_ONLY: settlement checks + candidate ranking; local authenticated executor performs mutations",
 }
 (root / "minute_state.json").write_text(json.dumps(out, indent=2, ensure_ascii=False))
