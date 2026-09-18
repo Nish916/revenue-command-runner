@@ -12,6 +12,14 @@ SAFE=re.compile(r'(?i)(api|python|javascript|typescript|documentation|research|a
 BAD=re.compile(r'(?i)(casino|gambl|deposit|stake|identity rental|account sale|private contacts|medical record|exploit|malware|credential theft|wash trade|sniper bot)')
 
 def ts(): return datetime.datetime.now(datetime.timezone.utc).isoformat()
+def notify(title,message):
+    safe_title=str(title).replace('"','\\"')[:120]
+    safe_msg=str(message).replace('"','\\"')[:400]
+    try:
+        os.system(f"osascript -e 'display notification \"{safe_msg}\" with title \"{safe_title}\"' >/dev/null 2>&1")
+    except Exception:
+        pass
+
 def log(msg):
     line=f'[{ts()}] {msg}'
     print(line, flush=True)
@@ -40,6 +48,12 @@ def api(method,path,body=None,timeout=10):
         try: payload=json.loads(raw)
         except: payload={'raw':raw[:1200]}
         return e.code,payload
+    except (urllib.error.URLError, TimeoutError, ConnectionError, OSError) as e:
+        log(f'api transport error {method} {path}: {e!r}')
+        return 0, {'error':'transport','detail':repr(e)}
+    except Exception as e:
+        log(f'api unexpected error {method} {path}: {e!r}')
+        return 0, {'error':'unexpected','detail':repr(e)}
 
 def get_all_jobs():
     out=[]
@@ -252,6 +266,22 @@ def main():
         (HOME/'.openwork/income-state.json').write_text(json.dumps(truth,indent=2))
         verification=p.get('verification') or {}
         snap={'ts':ts(),'mode':'AUTHENTICATED_EXECUTOR','profile':{'claimed':bool(p.get('claimedAt') or p.get('isClaimed')),'trustTierLevel':p.get('trustTierLevel'),'verified':verification.get('verified'),'verificationChecks':verification.get('checks'),'totalEarned':p.get('totalEarned'),'activeContractCount':p.get('activeContractCount'),'healthy':p.get('isHealthy'),'lastHealthPing':p.get('lastHealthPing')},'wallet':w,'inventory':{'total':len(jobs),'funded':len(funded),'claimable':len(claimable)},'current':{'bids':len(bids),'contracts':len(cs),'listings':len(listings()),'pendingListingRequests':len(reqs)},'actions':actions,'truth_rule':'Only funded+claimable/accepted work or settled wallet changes are cash-near. Unfunded listings and salary headlines are research only.'}
+        previous={}
+        if STATE.exists():
+            try: previous=json.load(open(STATE))
+            except: previous={}
+        prev_inv=previous.get('inventory') or {}
+        prev_cur=previous.get('current') or {}
+        prev_wallet=previous.get('wallet') or {}
+        try: old_available=float(prev_wallet.get('available') or 0)
+        except: old_available=0.0
+        try: new_available=float(w.get('available') or 0)
+        except: new_available=0.0
+        if len(funded)>int(prev_inv.get('funded') or 0): notify('Revenue Executor','New funded Dealwork inventory detected')
+        if len(claimable)>int(prev_inv.get('claimable') or 0): notify('Revenue Executor','New claimable paid task detected')
+        if len(cs)>int(prev_cur.get('contracts') or 0): notify('Revenue Executor','New paid contract detected')
+        if len(reqs)>int(prev_cur.get('pendingListingRequests') or 0): notify('Revenue Executor','New service quote/order request detected')
+        if new_available>old_available: notify('REAL INCOME ALERT',f'Dealwork available balance increased to {new_available:.2f} USD')
         STATE.write_text(json.dumps(snap,indent=2))
         log('cycle '+json.dumps({'funded':len(funded),'claimable':len(claimable),'contracts':len(cs),'bids':len(bids),'actions':len(actions),'wallet':w.get('available')}))
 
