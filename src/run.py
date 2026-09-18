@@ -763,7 +763,8 @@ result={
     "first_cash":[],
    "application_pipeline":[x for x in all_items if x.get("pay_certainty")=="PUBLISHED_PAY_SCREENING_REQUIRED" and x.get("kind") in ("paid-trial","paid-hourly")][:20],
    "high_ticket":[x for x in all_items if x.get("amount_guess",0)>=2500 and x.get("kind") in ("bounty","challenge","consulting-rfp","paid-task")][:12],
-   "fast_cash":[x for x in all_items if x.get("kind") in ("paid-trial","freelance") and not x.get("manual_gate")][:20],
+   "fast_cash":[],
+   "freelance_pipeline":[x for x in all_items if x.get("kind") in ("paid-trial","freelance")][:20],
    "buyer_intent":[x for x in all_items if x.get("kind")=="buyer-intent"][:20],
    "contract_jobs":[x for x in all_items if x.get("kind")=="contract-job"][:20],
    "all_ranked":all_items[:60]

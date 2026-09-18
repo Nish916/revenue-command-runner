@@ -9,6 +9,7 @@ def deterministic():
     first=q.get("first_cash") or []
     apps=q.get("application_pipeline") or []
     fast=q.get("fast_cash") or []
+    freelance=q.get("freelance_pipeline") or []
     high=q.get("high_ticket") or []
     intent=q.get("buyer_intent") or []
     contracts=q.get("contract_jobs") or []
@@ -32,14 +33,14 @@ def deterministic():
     if first:
       x=first[0]
       lines.append(f"- NOW: Cash-near funded/executable lane [{x.get('source')}] {x.get('title')} — amount {x.get('amount_guess')} {x.get('currency') or ''} — action {x.get('action')}.")
-    elif fast:
-      x=fast[0]
-      lines.append(f"- NOW: Closest-to-cash candidate [{x.get('source')}] {x.get('title')} — parsed amount {x.get('amount_guess')} — action {x.get('action')}.")
     else:
-      lines.append("- NOW: No cloud-discovered opportunity qualifies as cash-near. Do not confuse screening-required roles or buyer-intent signals with earnings; local authenticated executor owns real APPLY/CLAIM/START_WORK actions.")
+      lines.append("- NOW: No cloud-discovered opportunity qualifies as cash-near. Do not confuse screening-required roles, freelance listings, or buyer-intent signals with earnings; local authenticated executor owns real APPLY/CLAIM/START_WORK actions.")
+    if freelance:
+      x=freelance[0]
+      lines.append(f"- DISCOVERY ONLY — FREELANCE: [{x.get('source')}] {x.get('title')} — parsed budget {x.get('amount_guess')}; application/bid not yet executed.")
     if apps:
       x=apps[0]
-      lines.append(f"- APPLICATION PIPELINE (NOT CASH-NEAR): [{x.get('source')}] {x.get('title')} — advertised up to {x.get('amount_guess')} {x.get('currency') or ''}; screening/application required.")
+      lines.append(f"- APPLICATION PIPELINE (NOT CASH-NEAR): [{x.get('source')}] {x.get('title')} — published floor/reference {x.get('amount_guess')} {x.get('currency') or ''}; screening/application required.")
 
     if intent:
       x=intent[0]
