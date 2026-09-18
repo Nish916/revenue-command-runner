@@ -22,7 +22,7 @@ def deterministic():
 
     lines=[
       "## SUPER INFINITY AGGRESSIVE REVENUE CONTROLLER",
-      "- ROLE: Cloud discovery is advisory only; authenticated mutations run in the local executor.",
+      "- ROLE: AUTOMATION_ONLY. Cloud discovery is advisory only; authenticated mutations run in the local executor.",
       f"- MODE: {floor.get('mode','SUPER_INFINITY_AGGRESSIVE')}",
       f"- TARGET: {floor.get('target','Maximize legitimate externally funded settlement velocity with payer-first execution; never guarantee income.')}",
       f"- VERIFIED: RustChain visible total is {settle.get('rustchain_total_rtc')} RTC.",
@@ -70,14 +70,14 @@ def deterministic():
     lines += [
       "- GUARANTEE GATE: Never call an opportunity guaranteed before payer acceptance/allocation. Once fixed-pay funded work is accepted and completion criteria are under our control, it outranks every search lane.",
       "- EXECUTION LAW 1: A pending proposal, PR, claim, review, KYC review or unpaid deliverable never satisfies the hourly floor.",
-      "- EXECUTION LAW 2: If no settlement is verified, prioritize in this order: ACCEPTED/FUNDED work > paid qualification/task > prepaid fixed-scope service > warm buyer invoice/milestone > new verified bounty > high-ticket proposal.",
-      "- EXECUTION LAW 3: Spend no more than 10% of a cycle on high-ticket research until a recurring cash floor exists.",
+      "- EXECUTION LAW 2: AUTOMATION_ONLY priority: accepted/funded machine-executable work > funded agent-allowed bounty with deterministic acceptance > prepaid fixed-scope digital service order > agent-native escrowed task > verified open-source bounty. Human interviews, surveys, live usability tests and manual attendance are PARKED.",
+      "- EXECUTION LAW 3: Spend 0% of core cycles on interviews, surveys, research calls or human-attendance tasks. Keep them outside the automation core.",
       "- EXECUTION LAW 4: Never spend two consecutive cycles on the same blocked payer/source without new evidence. PARK and rotate.",
       "- EXECUTION LAW 5: Maintain at least 8 independent payer lanes. If fewer than 8 survive filters, discovery expansion becomes the first action.",
       "- EXECUTION LAW 6: For direct client work, ask for upfront payment or funded milestone before substantial delivery.",
       "- EXECUTION LAW 7: Every cycle must produce NOW / NEXT / PARK. NOW must be a concrete action tied to a payer, not 'monitor'.",
       "- NEXT: Push the best authenticated APPLY/WORK lane; if authentication is unavailable, prepare exact submission/deliverable and rotate to another executable lane.",
-      "- PARK: Any lane requiring deposit/stake, self-payment, fake demand, spam, identity rental, private-contact scraping, gambling/trading, or unauthorized exploitation.",
+      "- PARK: Any lane requiring human interview/attendance, survey/user-testing participation, deposit/stake/bond without explicit human approval, self-payment, fake demand, spam, identity rental, private-contact scraping, gambling/trading, AI use prohibited by platform terms, or unauthorized exploitation.",
       "- PAID GATE: Only authoritative external settlement or payer-confirmed withdrawal-ready funds count as earnings.",
     ]
     return "\n".join(lines)
@@ -101,13 +101,13 @@ OPERATING RULES:
 - Never wait on one payer. If blocked, PARK immediately and rotate.
 - Never spend two consecutive cycles on the same blocked source without new evidence.
 - Maintain at least 8 independent payer classes and continuously expand buyer-intent/source beacons.
-- High-ticket research gets max 10% of attention until a recurring floor exists.
+- Interviews, paid research calls, surveys and human usability testing get 0% of core automation attention.
 - Every cycle must output NOW / NEXT / PARK.
 - NOW must identify a concrete payer, exact work, expected payout, and first action. Never say merely "monitor".
 - For direct-client work prefer upfront payment or funded milestone before substantial delivery.
 - Count money only after authoritative external settlement or payer-confirmed withdrawal-ready evidence.
 - No trading/speculation, gambling, self-funding, deposits/stakes to earn, fake buyers/traffic, spam, identity rental, private-contact scraping, account sales, or unauthorized security testing.
-- Never fabricate buyer interest, acceptance, balance, or payment.
+- Never fabricate buyer interest, acceptance, balance, or payment. Never automate a task that requires a real human participant or prohibits AI/agent execution.
 
 OUTPUT:
 A) HOURLY FLOOR STATUS
