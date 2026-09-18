@@ -87,7 +87,10 @@ def github_paid():
         if not url:continue
         repo_url=it.get("repository_url") or ""
         if "Nish916/revenue-command-runner" in url or "Nish916/revenue-command-runner" in repo_url:continue
-        if it.get("assignees"):continue
+        is_expensify = ("Expensify/App" in repo_url or "/Expensify/App/" in url)
+        # Expensify assigns an internal issue owner even while Help Wanted/Upwork intake can remain open.
+        # For other repositories, assignees still mean the opportunity is likely already owned.
+        if it.get("assignees") and not is_expensify:continue
         if re.search(r"(?i)(bounty-plaza|/arbitr/|bounty[-_]?radar|claim[-_]?tracker)",url):continue
         txt=(it.get("title") or "")+" "+(it.get("body") or "")
         if BAD.search(txt) or re.search(r"(?i)due for payment",txt):continue
@@ -113,7 +116,12 @@ def github_paid():
         if trust<2:continue
         x["trust"]=trust;x["stars"]=stars;x["forks"]=forks
         x["score"]=round(x["amount_guess"]*(1+0.08*x["fit"])*(0.7+0.1*trust)/(1+0.18*x["comments"]),2)
-        x["action"]="VERIFY"
+        if x.get("repo")=="Expensify/App":
+            x["action"]="VERIFY_UPWORK_INTAKE_AND_PROPOSE"
+            x["manual_gate"]="UPWORK_OR_CONTRIBUTOR_SELECTION"
+            x["automation_fit"]="CODE_DELIVERY_AUTOMATABLE_AFTER_ACCEPTANCE"
+        else:
+            x["action"]="VERIFY"
         out.append(x)
     return sorted(out,key=lambda x:x["score"],reverse=True)
 
