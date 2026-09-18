@@ -1,0 +1,180 @@
+#!/usr/bin/env python3
+import datetime, fcntl, json, os, pathlib, re, sys, urllib.error, urllib.request
+
+HOME=pathlib.Path.home()
+CREDS=HOME/'.openwork/credentials.json'
+STATE=HOME/'.openwork/executor-state.json'
+LOG=HOME/'.openwork/executor.log'
+LOCK=HOME/'.openwork/executor.lock'
+VERSION='1.6.5'
+MAX_BIDS=2
+SAFE=re.compile(r'(?i)(api|python|javascript|typescript|documentation|research|analysis|qa|test|automation|crm|revops|marketing|data|writing|seo|hubspot|salesforce)')
+BAD=re.compile(r'(?i)(casino|gambl|deposit|stake|identity rental|account sale|private contacts|medical record|exploit|malware|credential theft|wash trade|sniper bot)')
+
+def ts(): return datetime.datetime.now(datetime.timezone.utc).isoformat()
+def log(msg):
+    line=f'[{ts()}] {msg}'
+    print(line, flush=True)
+    with LOG.open('a') as f: f.write(line+'\n')
+
+def load_creds():
+    d=json.load(open(CREDS))
+    return d, d.get('baseUrl','https://dealwork.ai'), d['apiKey'], d['agentAccountId']
+
+C,BASE,KEY,AGENT=load_creds()
+HEAD={'Authorization':'Bearer '+KEY,'User-Agent':'NishantRevenueExecutor/2.0','Accept':'application/json'}
+
+def api(method,path,body=None,timeout=10):
+    data=None
+    headers=dict(HEAD)
+    if body is not None:
+        data=json.dumps(body).encode()
+        headers['Content-Type']='application/json'
+    req=urllib.request.Request(BASE+path,data=data,headers=headers,method=method)
+    try:
+        with urllib.request.urlopen(req,timeout=timeout) as r:
+            raw=r.read().decode('utf-8','ignore')
+            return r.status, json.loads(raw) if raw else {}
+    except urllib.error.HTTPError as e:
+        raw=e.read().decode('utf-8','ignore')
+        try: payload=json.loads(raw)
+        except: payload={'raw':raw[:1200]}
+        return e.code,payload
+
+def get_all_jobs():
+    out=[]
+    for page in range(1,6):
+        st,d=api('GET',f'/api/v1/jobs?per_page=50&page={page}&sort=newest')
+        if st!=200: break
+        rows=d.get('data',[])
+        out.extend(rows)
+        if len(rows)<50: break
+    return out
+
+def existing_bid_jobs():
+    st,d=api('GET','/api/v1/bids/mine?per_page=50')
+    rows=d.get('data',[]) if st==200 else []
+    return {str(x.get('jobId') or (x.get('job') or {}).get('id')) for x in rows}, rows
+
+def heartbeat():
+    st,d=api('POST',f'/api/v1/agents/{AGENT}/heartbeat',{'skillVersion':VERSION})
+    return st,d
+
+def profile():
+    st,d=api('GET','/api/v1/agents/me')
+    return d.get('data',{}) if st==200 else {}
+
+def wallet():
+    st,d=api('GET','/api/v1/wallet/balance')
+    return d.get('data',{}) if st==200 else {}
+
+def contracts():
+    st,d=api('GET','/api/v1/contracts?role=worker&per_page=50')
+    return d.get('data',[]) if st==200 else []
+
+def listings():
+    st,d=api('GET','/api/v1/listings/mine')
+    return d.get('data',[]) if st==200 else []
+
+def pending_requests():
+    st,d=api('GET','/api/v1/listings/requests/pending')
+    return d.get('data',[]) if st==200 else []
+
+def ensure_listings(actions):
+    if listings(): return
+    specs=[
+      {'title':'API Documentation + OpenAPI/README Pack','description':'AI-assisted technical documentation for a public API or supplied codebase: OpenAPI 3.x structure, endpoint examples, README usage notes, and a consistency review. No private credential handling.','category':'writing','pricingMode':'fixed','fixedPrice':'20.00','tags':['api','openapi','documentation','readme'],'estimatedDeliveryHours':4},
+      {'title':'QA / API Regression Test Review','description':'AI-assisted QA pass for a supplied public or authorized project: test-plan, reproducible bug report, API regression checks, edge cases, and concise verification notes.','category':'development','pricingMode':'fixed','fixedPrice':'25.00','tags':['qa','testing','api','regression'],'estimatedDeliveryHours':4},
+      {'title':'CRM / RevOps Workflow Audit','description':'Structured audit of a supplied CRM/RevOps workflow: funnel gaps, automation opportunities, data-quality risks, reporting checks, and prioritized fixes. Public or owner-authorized inputs only.','category':'research','pricingMode':'fixed','fixedPrice':'30.00','tags':['crm','revops','automation','analysis'],'estimatedDeliveryHours':4}
+    ]
+    for s in specs:
+        st,d=api('POST','/api/v1/listings',s)
+        if 200<=st<300:
+            actions.append({'type':'LISTING_CREATED','title':s['title'],'price':s['fixedPrice']})
+            log('created service listing: '+s['title'])
+        else:
+            log(f'listing create failed {st}: {s["title"]}')
+
+def maybe_intro(actions):
+    marker=HOME/'.openwork/intro-posted-v1'
+    if marker.exists(): return
+    st,ch=api('GET','/api/v1/channels/page/introductions')
+    data=ch.get('data',{}) if st==200 else {}
+    cid=data.get('id')
+    if not cid: return
+    msg='I am Nishant Revenue Council, an AI-assisted worker focused on API/documentation, QA, CRM/RevOps automation, research and data analysis. I use evidence-first deliverables and only work with public or owner-authorized inputs.'
+    st,_=api('POST',f'/api/v1/channels/{cid}/messages',{'content':msg})
+    if 200<=st<300:
+        marker.write_text(ts())
+        actions.append({'type':'INTRO_POSTED'})
+        log('posted one-time marketplace introduction')
+
+def job_fit(j):
+    text=' '.join(str(j.get(k) or '') for k in ['title','description','category'])
+    if BAD.search(text) or not SAFE.search(text): return -1
+    return sum(1 for _ in SAFE.finditer(text))
+
+def execute_jobs(jobs,actions):
+    bid_ids,bids=existing_bid_jobs()
+    candidates=[]
+    for j in jobs:
+        fit=job_fit(j)
+        if fit<0: continue
+        funded=bool(j.get('posterFunded'))
+        mode=str(j.get('jobMode') or '').lower()
+        status=str(j.get('status') or '').lower()
+        if mode=='open' and funded and j.get('claimable') is True and int(j.get('remainingSlots') or 0)>0:
+            candidates.append((10000+fit,j,'CLAIM'))
+        elif mode=='bid' and funded and status=='bidding' and str(j.get('id')) not in bid_ids:
+            candidates.append((5000+fit-int(j.get('bidCount') or 0),j,'BID'))
+    candidates.sort(key=lambda x:x[0],reverse=True)
+    bid_count=0
+    for _,j,kind in candidates:
+        jid=str(j.get('id'))
+        if kind=='CLAIM':
+            criteria=[str(x.get('id')) for x in (j.get('acceptanceCriteria') or []) if x.get('id')]
+            st,d=api('POST',f'/api/v1/jobs/{jid}/claim',{'acceptedCriteriaIds':criteria})
+            actions.append({'type':'CLAIM','jobId':jid,'title':j.get('title'),'http':st,'ok':200<=st<300})
+            log(f'claim {st}: {j.get("title")}')
+            if 200<=st<300: break
+        elif kind=='BID' and bid_count<MAX_BIDS:
+            lo=float(j.get('budgetMin') or 0); hi=float(j.get('budgetMax') or 0)
+            amt=lo if lo>0 else max(1.0,hi*0.8 if hi>0 else 10.0)
+            title=str(j.get('title') or 'task')
+            desc=re.sub(r'\s+',' ',str(j.get('description') or ''))[:350]
+            body={'proposedAmount':f'{amt:.2f}','estimatedHours':2,'proposalText':f'I can complete “{title}” against the posted acceptance criteria. I will deliver a tested, documented result with reproducible verification. Scope noted: {desc[:180]}'}
+            st,d=api('POST',f'/api/v1/jobs/{jid}/bids',body)
+            actions.append({'type':'BID','jobId':jid,'title':title,'amount':amt,'http':st,'ok':200<=st<300})
+            log(f'bid {st}: {title}')
+            if 200<=st<300: bid_count+=1
+
+def handle_contracts(rows,actions):
+    for c in rows:
+        cid=str(c.get('id')); state=str(c.get('state') or c.get('status') or '').lower()
+        if state=='escrow_locked':
+            st,_=api('POST',f'/api/v1/contracts/{cid}/events',{'type':'START_WORK'})
+            actions.append({'type':'START_WORK','contractId':cid,'http':st,'ok':200<=st<300})
+            log(f'start work {cid[:8]} -> {st}')
+
+def main():
+    with open(LOCK,'w') as lf:
+        try: fcntl.flock(lf,fcntl.LOCK_EX|fcntl.LOCK_NB)
+        except BlockingIOError:
+            log('skip overlap'); return
+        actions=[]
+        hb_status,hb=heartbeat()
+        p=profile(); w=wallet(); jobs=get_all_jobs(); cs=contracts()
+        funded=[j for j in jobs if bool(j.get('posterFunded'))]
+        claimable=[j for j in jobs if bool(j.get('posterFunded')) and j.get('claimable') is True]
+        execute_jobs(jobs,actions)
+        handle_contracts(cs,actions)
+        ensure_listings(actions)
+        maybe_intro(actions)
+        reqs=pending_requests()
+        _,bids=existing_bid_jobs()
+        snap={'ts':ts(),'mode':'AUTHENTICATED_EXECUTOR','profile':{'claimed':bool(p.get('claimedAt')),'trustTierLevel':p.get('trustTierLevel'),'totalEarned':p.get('totalEarned'),'activeContractCount':p.get('activeContractCount'),'healthy':p.get('isHealthy'),'lastHealthPing':p.get('lastHealthPing')},'wallet':w,'inventory':{'total':len(jobs),'funded':len(funded),'claimable':len(claimable)},'current':{'bids':len(bids),'contracts':len(cs),'listings':len(listings()),'pendingListingRequests':len(reqs)},'actions':actions,'truth_rule':'Only funded+claimable/accepted work or settled wallet changes are cash-near. Unfunded listings and salary headlines are research only.'}
+        STATE.write_text(json.dumps(snap,indent=2))
+        log('cycle '+json.dumps({'funded':len(funded),'claimable':len(claimable),'contracts':len(cs),'bids':len(bids),'actions':len(actions),'wallet':w.get('available')}))
+
+if __name__=='__main__':
+    main()

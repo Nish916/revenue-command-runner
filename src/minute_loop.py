@@ -6,8 +6,6 @@ base = json.loads((root / "result.json").read_text())
 queue = base.get("queue") or {}
 first = queue.get("first_cash") or []
 fast = queue.get("fast_cash") or []
-intent = queue.get("buyer_intent") or []
-high = queue.get("high_ticket") or []
 ranked = queue.get("all_ranked") or []
 
 UA = {"User-Agent": "revenue-command-runner-minute/1.0"}
@@ -34,18 +32,13 @@ def settlement():
     return {"native": native, "hosted": hosted, "total_rtc": total}
 
 def pick(cycle):
+    # Cloud never claims/apply/bids. Candidate is informational only.
     pool = []
     seen = set()
-    primary = first + fast + intent + high
-    fallback = [x for x in ranked if x.get("kind") != "contract-job"]
-    for item in primary + fallback:
-        key = (item.get("source"), item.get("url"), item.get("title"))
-        if key in seen:
-            continue
-        seen.add(key)
-        if item.get("action") == "PARK":
-            continue
-        pool.append(item)
+    for item in first + fast + [x for x in ranked if x.get("kind") in ("bounty","paid-trial","freelance")]:
+        key=(item.get("source"),item.get("url"),item.get("title"))
+        if key in seen or item.get("action")=="PARK": continue
+        seen.add(key); pool.append(item)
     return pool[cycle % len(pool)] if pool else None
 
 start = settlement()
@@ -59,8 +52,9 @@ for i in range(4):
         "ts": now(),
         "settlement_total_rtc": cur["total_rtc"],
         "settlement_delta_rtc": delta,
-        "status": "SETTLED" if delta > 0 else "ZERO_SETTLEMENT",
-        "now": {
+        "status": "SETTLED" if delta > 0 else "NO_NEW_SETTLEMENT",
+        "cloud_role": "DISCOVERY_ONLY",
+        "candidate": {
             "source": item.get("source") if item else None,
             "kind": item.get("kind") if item else None,
             "title": item.get("title") if item else "DISCOVERY_EXPANSION",
@@ -68,7 +62,7 @@ for i in range(4):
             "amount_guess": item.get("amount_guess") if item else None,
             "action": item.get("action") if item else "EXPAND_DISCOVERY",
         },
-        "rule": "No blocked or merely pending item can satisfy the payment floor.",
+        "rule": "Cloud candidates are informational. Only the local authenticated executor may APPLY/CLAIM/START_WORK; only external settlement counts as earnings.",
     })
     print(json.dumps(cycles[-1], ensure_ascii=False), flush=True)
     if i < 3:
@@ -80,6 +74,6 @@ out = {
     "start_settlement": start,
     "cycles": cycles,
     "final_delta_rtc": cycles[-1]["settlement_delta_rtc"],
-    "minute_mode": "SUPER_INFINITY_AGGRESSIVE: 4 payer-first micro-cycles inside each scheduled cloud run",
+    "minute_mode": "DISCOVERY_ONLY: settlement checks + candidate ranking; local authenticated executor performs mutations",
 }
 (root / "minute_state.json").write_text(json.dumps(out, indent=2, ensure_ascii=False))

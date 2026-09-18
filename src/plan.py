@@ -7,6 +7,7 @@ result=json.loads((root/"result.json").read_text())
 def deterministic():
     q=result.get("queue") or {}
     first=q.get("first_cash") or []
+    apps=q.get("application_pipeline") or []
     fast=q.get("fast_cash") or []
     high=q.get("high_ticket") or []
     intent=q.get("buyer_intent") or []
@@ -20,6 +21,7 @@ def deterministic():
 
     lines=[
       "## SUPER INFINITY AGGRESSIVE REVENUE CONTROLLER",
+      "- ROLE: Cloud discovery is advisory only; authenticated mutations run in the local executor.",
       f"- MODE: {floor.get('mode','SUPER_INFINITY_AGGRESSIVE')}",
       f"- TARGET: {floor.get('target','Maximize legitimate externally funded settlement velocity with payer-first execution; never guarantee income.')}",
       f"- VERIFIED: RustChain visible total is {settle.get('rustchain_total_rtc')} RTC.",
@@ -29,19 +31,19 @@ def deterministic():
 
     if first:
       x=first[0]
-      lines.append(f"- NOW: Published-pay screening lane [{x.get('source')}] {x.get('title')} — pay {x.get('amount_guess')} {x.get('currency') or ''} ({x.get('amount_basis')}) — action {x.get('action')}. This is NOT guaranteed until accepted/allocated by the payer.")
+      lines.append(f"- NOW: Cash-near funded/executable lane [{x.get('source')}] {x.get('title')} — amount {x.get('amount_guess')} {x.get('currency') or ''} — action {x.get('action')}.")
     elif fast:
       x=fast[0]
       lines.append(f"- NOW: Closest-to-cash candidate [{x.get('source')}] {x.get('title')} — parsed amount {x.get('amount_guess')} — action {x.get('action')}.")
-    elif intent:
-      x=intent[0]
-      lines.append(f"- NOW: Fresh buyer-intent [{x.get('source')}] {x.get('title')} — parsed amount {x.get('amount_guess')} — action {x.get('action')}. Verify the payer and scope before outreach.")
     else:
-      lines.append("- NOW: No fast-cash or explicit buyer-intent candidate passed filters; immediately widen discovery instead of waiting on pending work.")
+      lines.append("- NOW: No cloud-discovered opportunity qualifies as cash-near. Do not confuse screening-required roles or buyer-intent signals with earnings; local authenticated executor owns real APPLY/CLAIM/START_WORK actions.")
+    if apps:
+      x=apps[0]
+      lines.append(f"- APPLICATION PIPELINE (NOT CASH-NEAR): [{x.get('source')}] {x.get('title')} — advertised up to {x.get('amount_guess')} {x.get('currency') or ''}; screening/application required.")
 
     if intent:
       x=intent[0]
-      lines.append(f"- INTENT BEACON: [{x.get('source')}] {x.get('title')} — freshness/fit scored, action {x.get('action')}.")
+      lines.append(f"- DISCOVERY ONLY — INTENT BEACON: [{x.get('source')}] {x.get('title')} — freshness/fit scored; payer/contact still unverified.")
 
     if contracts:
       lines.append(f"- CONTRACT POOL: {len(contracts)} ranked remote/contract jobs are available as a lower-speed independent payer lane.")

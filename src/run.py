@@ -649,7 +649,8 @@ def nearskill():
             except:lo=0
             try:hi=float(val.get("maxValue") or val.get("value") or 0)
             except:hi=0
-            amt=hi or lo
+            # Conservative ranking: use the published floor, not the headline maximum.
+            amt=lo if lo>0 else hi
             if amt<=0:return None
             unit=str(val.get("unitText") or "").upper()
             openings=int(job.get("totalJobOpenings") or 0)
@@ -662,8 +663,9 @@ def nearskill():
             score=amt*multiplier*(1+0.35*fit)*(1+min(openings,100)/500)
             return {
               "source":"nearskill","kind":kind,"title":title,"company":org,"url":url,
-              "amount_guess":amt,"currency":sal.get("currency") if isinstance(sal,dict) else None,
-              "amount_basis":"fixed" if fixed_hint else ("hourly" if unit=="HOUR" else unit.lower() or "published"),
+              "amount_guess":amt,"advertised_min":lo or None,"advertised_max":hi or None,
+              "currency":sal.get("currency") if isinstance(sal,dict) else None,
+              "amount_basis":"fixed" if fixed_hint else ("hourly_floor" if unit=="HOUR" else unit.lower() or "published"),
               "fit":fit,"openings":openings,"locations":locs,"date_posted":job.get("datePosted"),
               "pay_certainty":"PUBLISHED_PAY_SCREENING_REQUIRED","manual_gate":"APPLICATION_OR_SCREENING",
               "score":round(score,2),"action":"APPLY_OR_PREP"
@@ -722,7 +724,8 @@ result={
  },
  "payment_floor":{
    "mode":"SUPER_INFINITY_AGGRESSIVE",
-   "target":"Maximize legitimate externally funded settlement velocity with payer-first execution; never guarantee income.",
+   "cloud_role":"DISCOVERY_ONLY_LOCAL_EXECUTOR_REQUIRED",
+   "target":"Discover and rank opportunities, while authenticated transaction-producing actions run only in the local executor; never guarantee income.",
    "priority_order":[
      "accepted_or_funded_work",
      "paid_qualification_or_hourly_task",
@@ -757,9 +760,10 @@ result={
  },
  "source_status":[{k:v for k,v in s.items() if k!="items"} for s in sorted(source_results,key=lambda x:x["source"])],
  "queue":{
-   "first_cash":[x for x in all_items if x.get("pay_certainty")=="PUBLISHED_PAY_SCREENING_REQUIRED" and x.get("kind") in ("paid-trial","paid-hourly")][:20],
-   "high_ticket":[x for x in all_items if x.get("amount_guess",0)>=2500][:12],
-   "fast_cash":[x for x in all_items if x.get("kind") in ("paid-hourly","freelance")][:20],
+    "first_cash":[],
+   "application_pipeline":[x for x in all_items if x.get("pay_certainty")=="PUBLISHED_PAY_SCREENING_REQUIRED" and x.get("kind") in ("paid-trial","paid-hourly")][:20],
+   "high_ticket":[x for x in all_items if x.get("amount_guess",0)>=2500 and x.get("kind") in ("bounty","challenge","consulting-rfp","paid-task")][:12],
+   "fast_cash":[x for x in all_items if x.get("kind") in ("paid-trial","freelance") and not x.get("manual_gate")][:20],
    "buyer_intent":[x for x in all_items if x.get("kind")=="buyer-intent"][:20],
    "contract_jobs":[x for x in all_items if x.get("kind")=="contract-job"][:20],
    "all_ranked":all_items[:60]
@@ -768,7 +772,7 @@ result={
    "count_as_revenue":["authoritative external settlement","payer-confirmed withdrawal-ready balance"],
    "do_not_count":["claim","bid","PR","listing","headline reward","self-transfer","402","unaccepted deliverable"],
    "blocked_lane_policy":"PARK_AND_CONTINUE",
-   "exploration_policy":"Continuously add new public payer, freelance, challenge, RFP and buyer-intent sources; failed or blocked sources are parked, not retried aggressively."
+   "exploration_policy":"Cloud is discovery-only. Auth-gated screening roles, annual salaries, unfunded listings, and unaccepted work never enter first_cash. Local authenticated executor owns APPLY/CLAIM/START_WORK."
  }
 }
 print(json.dumps(result,indent=2))
