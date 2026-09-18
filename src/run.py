@@ -73,7 +73,10 @@ def github_paid():
       'is:issue is:open in:title bounty updated:>=2026-09-01',
       'is:issue is:open "USDC" updated:>=2026-09-01',
       'is:issue is:open "$1000" updated:>=2026-09-01',
-      'is:issue is:open "$500" updated:>=2026-09-01'
+      'is:issue is:open "$500" updated:>=2026-09-01',
+      'is:issue is:open "$250" "Help Wanted" updated:>=2026-09-01',
+      'is:issue is:open "$250" "Upwork Automation" updated:>=2026-09-01',
+      'is:issue is:open "$100" "Help Wanted" updated:>=2026-09-01'
     ]
     raw={}
     for q in qs:
@@ -723,19 +726,20 @@ result={
    "intent_dictionary_file":"config/intent-signals.json"
  },
  "payment_floor":{
-   "mode":"SUPER_INFINITY_AGGRESSIVE",
+   "mode":"AUTOMATION_ONLY_SUPER_INFINITY_AGGRESSIVE",
    "cloud_role":"DISCOVERY_ONLY_LOCAL_EXECUTOR_REQUIRED",
-   "target":"Discover and rank opportunities, while authenticated transaction-producing actions run only in the local executor; never guarantee income.",
+   "target":"Discover and rank legitimate machine-executable paid work requiring minimal human attendance; authenticated mutations remain local; never guarantee income.",
    "priority_order":[
-     "accepted_or_funded_work",
-     "paid_qualification_or_hourly_task",
-     "prepaid_fixed_scope_service",
-     "warm_buyer_upfront_or_milestone",
-     "verified_unassigned_bounty",
-     "high_ticket_rfp"
+     "accepted_or_funded_machine_executable_work",
+     "funded_agent_allowed_zero_capital_bounty",
+     "prepaid_fixed_scope_digital_service",
+     "zero_capital_open_source_bounty",
+     "automation_compatible_freelance_task",
+     "high_ticket_automation_proposal"
    ],
    "rotation_rule":"Immediately rotate any blocked/non-executable source; never spend two consecutive cycles without new payer evidence.",
    "high_ticket_attention_cap_pct_until_floor":10,
+   "human_interview_survey_attention_pct":0,
    "minimum_independent_payer_lanes":8,
    "guarantee_definition":"Only accepted/funded fixed-pay work with objective acceptance and no remaining payer discretion can be called guarantee-ready; discovery/application alone never qualifies.",
    "cycle_output":["NOW","NEXT","PARK"]
@@ -773,7 +777,7 @@ result={
    "count_as_revenue":["authoritative external settlement","payer-confirmed withdrawal-ready balance"],
    "do_not_count":["claim","bid","PR","listing","headline reward","self-transfer","402","unaccepted deliverable"],
    "blocked_lane_policy":"PARK_AND_CONTINUE",
-   "exploration_policy":"Cloud is discovery-only. Auth-gated screening roles, annual salaries, unfunded listings, and unaccepted work never enter first_cash. Local authenticated executor owns APPLY/CLAIM/START_WORK."
+   "exploration_policy":"Automation-only cloud discovery. Human interviews/surveys/live usability tasks, auth-gated screening roles, annual salaries, spend-requiring competitions, unfunded listings, and unaccepted work never enter first_cash. Local authenticated executor owns APPLY/CLAIM/START_WORK."
  }
 }
 print(json.dumps(result,indent=2))
