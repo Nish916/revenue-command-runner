@@ -265,7 +265,12 @@ def main():
         truth={'ts':ts(),'bids':bids,'contracts':cs,'source':'authenticated_executor'}
         (HOME/'.openwork/income-state.json').write_text(json.dumps(truth,indent=2))
         verification=p.get('verification') or {}
-        snap={'ts':ts(),'mode':'AUTHENTICATED_EXECUTOR','profile':{'claimed':bool(p.get('claimedAt') or p.get('isClaimed')),'trustTierLevel':p.get('trustTierLevel'),'verified':verification.get('verified'),'verificationChecks':verification.get('checks'),'totalEarned':p.get('totalEarned'),'activeContractCount':p.get('activeContractCount'),'healthy':p.get('isHealthy'),'lastHealthPing':p.get('lastHealthPing')},'wallet':w,'inventory':{'total':len(jobs),'funded':len(funded),'claimable':len(claimable)},'current':{'bids':len(bids),'contracts':len(cs),'listings':len(listings()),'pendingListingRequests':len(reqs)},'actions':actions,'truth_rule':'Only funded+claimable/accepted work or settled wallet changes are cash-near. Unfunded listings and salary headlines are research only.'}
+        paid_invites={}
+        invites_file=HOME/'.openwork/verified-paid-invites.json'
+        if invites_file.exists():
+            try: paid_invites=json.load(open(invites_file))
+            except: paid_invites={}
+        snap={'ts':ts(),'mode':'AUTHENTICATED_EXECUTOR','manual_paid_invites':paid_invites,'profile':{'claimed':bool(p.get('claimedAt') or p.get('isClaimed')),'trustTierLevel':p.get('trustTierLevel'),'verified':verification.get('verified'),'verificationChecks':verification.get('checks'),'totalEarned':p.get('totalEarned'),'activeContractCount':p.get('activeContractCount'),'healthy':p.get('isHealthy'),'lastHealthPing':p.get('lastHealthPing')},'wallet':w,'inventory':{'total':len(jobs),'funded':len(funded),'claimable':len(claimable)},'current':{'bids':len(bids),'contracts':len(cs),'listings':len(listings()),'pendingListingRequests':len(reqs)},'actions':actions,'truth_rule':'Only funded+claimable/accepted work or settled wallet changes are cash-near. Unfunded listings and salary headlines are research only.'}
         previous={}
         if STATE.exists():
             try: previous=json.load(open(STATE))
