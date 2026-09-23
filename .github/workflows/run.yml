@@ -1,105 +1,26 @@
-name: Revenue Command Runner
+name: Run Revenue Command Runner
+
 on:
-  workflow_dispatch:
-  push:
-    branches: [main]
   schedule:
-    - cron: "*/30 * * * *"
-
-permissions:
-  contents: read
-  issues: write
-
-concurrency:
-  group: revenue-command-runner
-  cancel-in-progress: true
+    - cron: '*/5 * * * *'   # every 5 minutes
+  workflow_dispatch:
 
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 6
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
 
-      - name: Execute deep discovery
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: set -o pipefail; python3 src/run.py | tee result.json
-
-      - name: Run minute-level payment rotation
-        run: set -o pipefail; python3 src/minute_loop.py | tee /tmp/minute-loop.log
-
-      - name: Cloud decision layer
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: set -o pipefail; python3 src/plan.py | tee /tmp/plan.txt
-
-      - name: Build compact dashboard
-        run: |
-          python3 - <<'PY'
-          import json
-          d=json.load(open("result.json"))
-          m=json.load(open("minute_state.json"))
-          compact={
-            "ts":d.get("ts"),
-            "exploration_catalog":d.get("exploration_catalog"),
-            "payment_floor":d.get("payment_floor"),
-            "settlement":d.get("settlement"),
-            "minute_cycles":m.get("cycles",[]),
-            "minute_final_delta_rtc":m.get("final_delta_rtc"),
-            "submitted":d.get("submitted"),
-            "source_status":d.get("source_status"),
-            "first_cash":(d.get("queue") or {}).get("first_cash",[])[:8],
-            "application_pipeline":(d.get("queue") or {}).get("application_pipeline",[])[:8],
-            "high_ticket":(d.get("queue") or {}).get("high_ticket",[])[:8],
-            "fast_cash":(d.get("queue") or {}).get("fast_cash",[])[:8],
-            "freelance_pipeline":(d.get("queue") or {}).get("freelance_pipeline",[])[:8],
-            "buyer_intent":(d.get("queue") or {}).get("buyer_intent",[])[:8],
-            "contract_jobs":(d.get("queue") or {}).get("contract_jobs",[])[:8],
-            "rules":d.get("rules")
-          }
-          open("/tmp/compact.json","w").write(json.dumps(compact,indent=2))
-          PY
-
-      - name: Update dashboard issue
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          {
-            echo '# Cloud Revenue Command Dashboard'
-            echo
-            echo 'Updated: '`date -u +"%Y-%m-%d %H:%M:%S UTC"`
-            echo
-            echo '## Decision'
-            cat plan.md
-            echo
-            echo '## Compact evidence'
-            echo '~~~json'
-            cat /tmp/compact.json
-            echo '~~~'
-          } > /tmp/dashboard.md
-
-          ISSUE=$(gh issue list --repo "${{ github.repository }}" --state open --search '"Cloud Revenue Command Dashboard" in:title' --json number --jq '.[0].number // empty')
-          if [ -z "$ISSUE" ]; then
-            gh issue create --repo "${{ github.repository }}" --title "Cloud Revenue Command Dashboard" --body-file /tmp/dashboard.md
-          else
-            gh issue edit "$ISSUE" --repo "${{ github.repository }}" --body-file /tmp/dashboard.md
-          fi
-
-      - name: Summary
-        run: |
-          echo '## Revenue Command Runner' >> "$GITHUB_STEP_SUMMARY"
-          cat plan.md >> "$GITHUB_STEP_SUMMARY"
-          echo >> "$GITHUB_STEP_SUMMARY"
-          echo '~~~json' >> "$GITHUB_STEP_SUMMARY"
-          cat /tmp/compact.json >> "$GITHUB_STEP_SUMMARY"
-          echo '~~~' >> "$GITHUB_STEP_SUMMARY"
-
-      - uses: actions/upload-artifact@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          name: revenue-command-${{ github.run_id }}
-          path: |
-            result.json
-            minute_state.json
-            plan.md
-          retention-days: 7
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # No external dependencies required for the dashboard
+
+      - name: Run dashboard
+        run: |
+          python -m src.dashboard
