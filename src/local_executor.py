@@ -286,7 +286,7 @@ def main():
         if len(claimable)>int(prev_inv.get('claimable') or 0): notify('Revenue Executor','New claimable paid task detected')
         if len(cs)>int(prev_cur.get('contracts') or 0): notify('Revenue Executor','New paid contract detected')
         if len(reqs)>int(prev_cur.get('pendingListingRequests') or 0): notify('Revenue Executor','New service quote/order request detected')
-        if new_available>old_available: notify('REAL INCOME ALERT',f'Dealwork available balance increased to {new_available:.2f} USD')
+        if new_available>old_available: notify('Balance change — verify source',f'Dealwork available balance increased to {new_available:.2f} USD; income attribution is unverified')
         STATE.write_text(json.dumps(snap,indent=2))
         log('cycle '+json.dumps({'funded':len(funded),'claimable':len(claimable),'contracts':len(cs),'bids':len(bids),'actions':len(actions),'wallet':w.get('available')}))
 

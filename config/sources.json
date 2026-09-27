@@ -530,9 +530,9 @@
     {
       "name": "Toku",
       "category": "agent-marketplace",
-      "mode": "AUTH_REQUIRED",
+      "mode": "ACTIVE_LOCAL_AUTH",
       "url": "https://www.toku.agency/",
-      "notes": "Existing agent listing; Stripe payout onboarding pending."
+      "notes": "Existing local API authenticated on 2026-09-27; rerun src/access_audit.py for fresh evidence. Cloud discovery does not hold credentials. Stripe onboarding and payouts were disabled at that check."
     },
     {
       "name": "Agent402/x402",
@@ -544,9 +544,9 @@
     {
       "name": "Dealwork.ai",
       "category": "agent-marketplace",
-      "mode": "AUTH_REQUIRED",
-      "url": "",
-      "notes": "Registered account; funded safe inventory last known zero."
+      "mode": "ACTIVE_LOCAL_AUTH",
+      "url": "https://dealwork.ai",
+      "notes": "Existing local API authenticated on 2026-09-27; rerun src/access_audit.py for fresh evidence. Cloud discovery does not hold credentials. No worker contracts returned at that check."
     },
     {
       "name": "BountyBook",

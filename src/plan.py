@@ -21,11 +21,11 @@ def deterministic():
     catalog=result.get("exploration_catalog") or {}
 
     lines=[
-      "## SUPER INFINITY AGGRESSIVE REVENUE CONTROLLER",
+      "## Evidence-based revenue execution",
       "- ROLE: AUTOMATION_ONLY. Cloud discovery is advisory only; authenticated mutations run in the local executor.",
       f"- MODE: {floor.get('mode','SUPER_INFINITY_AGGRESSIVE')}",
       f"- TARGET: {floor.get('target','Maximize legitimate externally funded settlement velocity with payer-first execution; never guarantee income.')}",
-      f"- VERIFIED: RustChain visible total is {settle.get('rustchain_total_rtc')} RTC.",
+      f"- TOKEN BALANCE: RustChain reports {settle.get('rustchain_total_rtc')} RTC; this is not verified fiat proceeds or withdrawal readiness.",
       f"- VERIFIED: Cognitive-OS PR #53 state is {(sub.get('cognitive_pr_53') or {}).get('state','unknown')}.",
       f"- VERIFIED: RustChain #2259 state is {(sub.get('rustchain_2259') or {}).get('state','unknown')}.",
     ]
@@ -63,34 +63,34 @@ def deterministic():
     total=int(cat.get("total_sources") or 0)
     auth=int(modes.get("AUTH_REQUIRED") or 0)
     if total:
-      lines.append(f"- BOTTLENECK: {auth}/{total} tracked surfaces require authentication/manual account access; do not treat them as executable until an authorized session exists.")
+      lines.append(f"- ACCESS CATALOG: {auth}/{total} sources have the configured AUTH_REQUIRED label. This is not a count of failed logins; confirm current local access using access_audit.py before classifying a blocker.")
     if first:
       lines.append("- BOTTLENECK: first-cash listings still require payer screening/application acceptance; discovery alone cannot create settlement.")
 
     lines += [
-      "- GUARANTEE GATE: Never call an opportunity guaranteed before payer acceptance/allocation. Once fixed-pay funded work is accepted and completion criteria are under our control, it outranks every search lane.",
+      "- GUARANTEE GATE: Never guarantee income. Accepted funded work has priority, but acceptance, completion, settlement and bank receipt remain separate stages.",
       "- EXECUTION LAW 1: A pending proposal, PR, claim, review, KYC review or unpaid deliverable never satisfies the hourly floor.",
       "- EXECUTION LAW 2: AUTOMATION_ONLY priority: accepted/funded machine-executable work > funded agent-allowed bounty with deterministic acceptance > prepaid fixed-scope digital service order > agent-native escrowed task > verified open-source bounty. Human interviews, surveys, live usability tests and manual attendance are PARKED.",
       "- EXECUTION LAW 3: Spend 0% of core cycles on interviews, surveys, research calls or human-attendance tasks. Keep them outside the automation core.",
       "- EXECUTION LAW 4: Never spend two consecutive cycles on the same blocked payer/source without new evidence. PARK and rotate.",
-      "- EXECUTION LAW 5: Maintain at least 8 independent payer lanes. If fewer than 8 survive filters, discovery expansion becomes the first action.",
+      "- EXECUTION LAW 5: Maintain at most three evidence-qualified opportunities plus one bounded product experiment. Zero eligible opportunities is a valid result; never manufacture activity to fill lanes.",
       "- EXECUTION LAW 6: For direct client work, ask for upfront payment or funded milestone before substantial delivery.",
       "- EXECUTION LAW 7: Every cycle must produce NOW / NEXT / PARK. NOW must be a concrete action tied to a payer, not 'monitor'.",
       "- NEXT: Push the best authenticated APPLY/WORK lane; if authentication is unavailable, prepare exact submission/deliverable and rotate to another executable lane.",
       "- PARK: Any lane requiring human interview/attendance, survey/user-testing participation, deposit/stake/bond without explicit human approval, self-payment, fake demand, spam, identity rental, private-contact scraping, gambling/trading, AI use prohibited by platform terms, or unauthorized exploitation.",
-      "- PAID GATE: Only authoritative external settlement or payer-confirmed withdrawal-ready funds count as earnings.",
+      "- PAID GATE: Track authoritative external customer settlement separately from withdrawal-ready receivables and actual bank cash. Never count the same payment twice.",
     ]
     return "\n".join(lines)
 
 def call_openai(api_key):
-    prompt="""You are the SUPER_INFINITY_AGGRESSIVE REVENUE CONTROLLER for an India-based operator.
+    prompt="""You are the evidence-based revenue controller for an India-based operator.
 
 MISSION:
-Run SUPER_INFINITY_AGGRESSIVE payer-first execution. Maximize legitimate externally funded settlement velocity. This is a target, never a guarantee. Do NOT let research, monitoring, or high-ticket speculation consume the cycle while executable paid work exists.
+Prioritize verified buyer demand and accepted deliverables. Maximize legitimate externally funded settlement velocity. This is a target, never a guarantee. Do NOT let research, monitoring, or high-ticket speculation consume the cycle while executable paid work exists.
 
 STRICT PRIORITY ORDER WHEN THE CURRENT HOUR HAS NO VERIFIED SETTLEMENT:
 1. Already ACCEPTED/FUNDED work that can be completed now.
-2. Paid qualification, hourly work, usability/evaluation/data task with a real payer.
+2. Funded agent-permitted work with objective acceptance criteria and no human-participation requirement.
 3. Prepaid fixed-scope service that can be invoiced now.
 4. Warm buyer that can be moved to upfront payment or a funded milestone.
 5. Verified unassigned bounty with objective acceptance criteria and funded payout.
@@ -100,12 +100,12 @@ OPERATING RULES:
 - Pending proposal, PR, claim, review, KYC review, listing, headline reward, 402, self-transfer, or unpaid deliverable = ZERO earned.
 - Never wait on one payer. If blocked, PARK immediately and rotate.
 - Never spend two consecutive cycles on the same blocked source without new evidence.
-- Maintain at least 8 independent payer classes and continuously expand buyer-intent/source beacons.
+- Maintain at most three evidence-qualified opportunities plus one bounded product experiment. Do not expand sources merely to fill a quota.
 - Interviews, paid research calls, surveys and human usability testing get 0% of core automation attention.
 - Every cycle must output NOW / NEXT / PARK.
 - NOW must identify a concrete payer, exact work, expected payout, and first action. Never say merely "monitor".
 - For direct-client work prefer upfront payment or funded milestone before substantial delivery.
-- Count money only after authoritative external settlement or payer-confirmed withdrawal-ready evidence.
+- Separate settled customer revenue, withdrawal-ready receivables and bank receipts. Never guarantee a future payout or count one payment twice.
 - No trading/speculation, gambling, self-funding, deposits/stakes to earn, fake buyers/traffic, spam, identity rental, private-contact scraping, account sales, or unauthorized security testing.
 - Never fabricate buyer interest, acceptance, balance, or payment. Never automate a task that requires a real human participant or prohibits AI/agent execution.
 
