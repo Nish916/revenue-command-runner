@@ -1,4 +1,6 @@
 # Revenue Command Runner
+
+[![Powered by RustChain](https://img.shields.io/badge/Powered%20by-RustChain-orange)](https://rustchain.org)
 Generic cloud execution layer for public opportunity discovery and authoritative settlement/status checks.
 
 Runs every 5 minutes in GitHub Actions and can also be triggered manually.
