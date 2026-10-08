@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run a command only during 08:00–20:00 Asia/Kolkata, every day."""
+"""Compatibility gate retained for existing LaunchAgents; workers run 24/7."""
 import argparse
 from datetime import datetime
 import json
@@ -14,12 +14,11 @@ def local_now():
 
 
 def seconds_remaining(now):
+    """Legacy compatibility helper: any aware time is inside the continuous window."""
     if now.utcoffset() is None:
         raise ValueError("An aware clock is required")
-    local = now.astimezone(ZONE)
-    if not 8 <= local.hour < 20:
-        return 0
-    return (local.replace(hour=20, minute=0, second=0, microsecond=0) - local).total_seconds()
+    now.astimezone(ZONE)
+    return 86400.0
 
 
 def main(argv=None):
@@ -29,7 +28,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
     allowed = seconds_remaining(local_now()) > 0
     if args.check:
-        print(json.dumps({"timezone": "Asia/Kolkata", "in_window": allowed}))
+        print(json.dumps({"timezone": "Asia/Kolkata", "in_window": allowed, "mode": "continuous_24h"}))
         return 0
     command = args.command[1:] if args.command[:1] == ["--"] else args.command
     if not command:
@@ -39,7 +38,7 @@ def main(argv=None):
     try:
         return subprocess.run(command, shell=False, check=False).returncode
     except OSError:
-        print("Workday command could not be started.")
+        print("Continuous worker command could not be started.")
         return 127
 
 

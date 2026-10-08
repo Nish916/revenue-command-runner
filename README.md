@@ -15,12 +15,12 @@ Snapshots are private files outside the repository: `~/.openwork/access-audit.js
 
 Validate with `python3 -W error::ResourceWarning -m unittest discover -s tests`. Existing general-purpose workers are separate from this read-only health cycle.
 
-## Mac workday scheduling
+## Mac continuous scheduling
 
-`src/workday_gate.py -- COMMAND...` starts an existing worker only between 08:00 (inclusive) and 20:00 (exclusive), every day in Asia/Kolkata. Already-running work may finish. `--check` reports the gate without running work.
+`src/workday_gate.py -- COMMAND...` is retained as a compatibility wrapper for the installed LaunchAgents and now permits worker starts at every local time. `--check` reports `continuous_24h` without running work.
 
-Use RunAtLoad for login startup and StartCalendarInterval for normal cadence and wake catch-up; launchd coalesces missed calendar firings into one event. The health, worker and radar agents retain their hourly, two-minute or five-minute cadence. Sleep/offline periods produce no local work; shutdown requires the next login.
+RunAtLoad and the existing StartInterval/StartCalendarInterval schedules remain unchanged: the authenticated executor runs every minute, the GitHub radar every five minutes, the health cycle hourly, and the NexusEval worker hourly. Sleep/offline periods still produce no local work; shutdown requires the next login.
 
-`src/workday_awake.py` holds an idle-system-sleep assertion only during that window on AC power. The display can sleep. Unplugging, power-read failure or 20:00 releases the tracked assertion; manual/lid sleep remains possible. Launch it with RunAtLoad and a wildcard StartCalendarInterval. Both helper processes are unprivileged and no global power settings are changed.
+`src/workday_awake.py` keeps the Mac from entering idle system sleep continuously while on AC power. The display can sleep, and manual/lid sleep remains possible. On battery or an unknown power source it fails closed and does not force the machine awake. No global power settings are changed.
 
-Installation backs up pre-existing LaunchAgent plists under `~/.openwork/workday-backups/` and records their location in `~/.openwork/workday-setup.json`. To undo, unload the new awake agent, unload each changed agent, restore its original plist from that backup and bootstrap the original agents. Restoring does not erase account or delivery state.
+The pre-24h configuration is backed up under `~/.openwork/continuous-24h-backups/`, in addition to the original workday backups under `~/.openwork/workday-backups/`. Restore the latest backup files and kickstart the LaunchAgents to roll back; account and delivery state are separate and are not erased.

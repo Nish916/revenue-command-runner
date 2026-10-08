@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""On AC power, prevent idle system sleep until 20:00; allow display/manual sleep."""
+"""On AC power, prevent idle system sleep continuously; allow display/manual/lid sleep."""
 import argparse
 from contextlib import contextmanager
 import fcntl
@@ -10,7 +10,7 @@ import signal
 import subprocess
 import time
 
-from workday_gate import local_now, seconds_remaining
+from workday_gate import local_now
 
 
 def power_source():
@@ -40,7 +40,7 @@ def instance_lock(path):
             return
         yield True
     finally:
-        os.close(descriptor)  # Releases the advisory lock; never stores a PID.
+        os.close(descriptor)
 
 
 def stop(child):
@@ -60,23 +60,19 @@ def hold_awake(clock=None, power=None, sleep=None, popen=None):
     sleep, popen = sleep or time.sleep, popen or subprocess.Popen
     child = None
     try:
-        if seconds_remaining(clock()) < 1 or power() != "AC":
+        clock()  # Preserve an observable local-clock check for health/debugging.
+        if power() != "AC":
             return 0
-        duration = int(seconds_remaining(clock()))
-        if duration < 1:
-            return 0
-        child = popen(["/usr/bin/caffeinate", "-i", "-t", str(duration), "-w", str(os.getpid())],
+        child = popen(["/usr/bin/caffeinate", "-i", "-w", str(os.getpid())],
                       stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
                       stderr=subprocess.DEVNULL, shell=False)
         while child.poll() is None:
-            remaining = seconds_remaining(clock())
-            if remaining <= 0 or power() != "AC":
+            if power() != "AC":
                 break
-            # A power read has a two-second timeout; two-second sleeps bound checks below five seconds.
-            sleep(min(2, remaining))
+            sleep(2)
         return 0
     except Exception:
-        print("Workday idle-sleep assertion unavailable; no continued assertion requested.")
+        print("Continuous idle-sleep assertion unavailable; no continued assertion requested.")
         return 1
     finally:
         if child is not None:
@@ -87,24 +83,24 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args(argv)
-    allowed = seconds_remaining(local_now()) > 0
-    if not allowed and not args.check:
-        return 0
     source = power_source()
     if args.check:
-        print(json.dumps({"timezone": "Asia/Kolkata", "in_window": allowed, "power": source,
-                          "intent": "prevent_idle_system_sleep" if allowed and source == "AC" else "no_assertion"}))
+        print(json.dumps({"timezone": "Asia/Kolkata", "in_window": True, "mode": "continuous_24h",
+                          "power": source,
+                          "intent": "prevent_idle_system_sleep" if source == "AC" else "no_assertion"}))
         return 0
-    if not allowed or source != "AC":
+    if source != "AC":
         return 0
+
     def interrupted(signum, frame):
         raise SystemExit(0)
+
     previous = {sig: signal.signal(sig, interrupted) for sig in (signal.SIGTERM, signal.SIGINT)}
     try:
         with instance_lock("~/.openwork/workday-awake.lock") as acquired:
             return hold_awake() if acquired else 0
     except Exception:
-        print("Workday awake helper unavailable; no assertion started.")
+        print("Continuous awake helper unavailable; no assertion started.")
         return 1
     finally:
         for sig, handler in previous.items():
