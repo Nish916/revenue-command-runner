@@ -1,2 +1,11 @@
-
 __pycache__/
+.pytest_cache/
+result.json
+minute_state.json
+bounty_radar.json
+agent402-cloud.json
+plan.md
+.env
+.env.*
+*.key
+*.pem

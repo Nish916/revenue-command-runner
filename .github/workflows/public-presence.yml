@@ -1,0 +1,41 @@
+name: Public Agent402 Presence
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 2 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: agent402-public-presence
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Refresh public listing
+        run: python3 src/agent402_refresh.py --output agent402-cloud.json
+
+      - name: Verify report is explicit, not inferred payment
+        run: |
+          python3 - <<'PY'
+          import json
+          d=json.load(open("agent402-cloud.json"))
+          assert d["manifest"]["state"] in ("CONFIRMED", "UNKNOWN")
+          assert d["registration"]["state"] in ("CONFIRMED", "NOT_CONFIRMED", "UNKNOWN")
+          assert d["listing_state"] in ("CONFIRMED", "NOT_CONFIRMED", "UNKNOWN")
+          summary={k:d[k] for k in ("checked_at","manifest","registration","listing_state","semantics")}
+          print(json.dumps(summary,indent=2))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: public-agent402-${{ github.run_id }}
+          path: agent402-cloud.json
+          retention-days: 7

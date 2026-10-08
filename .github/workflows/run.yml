@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
   schedule:
-    - cron: "*/30 * * * *"
+    - cron: "7,22,37,52 * * * *"
 
 permissions:
   contents: read
@@ -29,6 +29,11 @@ jobs:
       - name: Run minute-level payment rotation
         run: set -o pipefail; python3 src/minute_loop.py | tee /tmp/minute-loop.log
 
+      - name: Scan public bounty candidates from cloud
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 src/cloud_bounty_radar.py
+
       - name: Cloud decision layer
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -40,8 +45,16 @@ jobs:
           import json
           d=json.load(open("result.json"))
           m=json.load(open("minute_state.json"))
+          radar=json.load(open("bounty_radar.json"))
           compact={
             "ts":d.get("ts"),
+            "cloud_bounty_radar":{
+              "scanned_at":radar.get("scanned_at"),
+              "candidate_count":radar.get("candidate_count"),
+              "searches_failed":radar.get("searches_failed"),
+              "top":[{k:x.get(k) for k in ("repo","number","title","url","amount_advertised","review_priority","funding","award")} for x in radar.get("top",[])[:8]],
+              "truth_rule":radar.get("truth_rule")
+            },
             "exploration_catalog":d.get("exploration_catalog"),
             "payment_floor":d.get("payment_floor"),
             "settlement":d.get("settlement"),
@@ -101,5 +114,6 @@ jobs:
           path: |
             result.json
             minute_state.json
+            bounty_radar.json
             plan.md
           retention-days: 7
