@@ -88,7 +88,10 @@ def contracts():
 
 def listings():
     st,d=api('GET','/api/v1/listings/mine')
-    return d.get('data',[]) if st==200 else []
+    if st!=200:
+        return []
+    rows=d.get('data',[])
+    return [x for x in rows if str(x.get('status') or 'active').lower()=='active']
 
 def pending_requests():
     st,d=api('GET','/api/v1/listings/requests/pending')
@@ -163,19 +166,26 @@ def maybe_fulfill_contract(c,actions):
             log(f'submitted contract {cid[:8]}')
 
 def ensure_listings(actions):
-    if listings(): return
+    st,d=api('GET','/api/v1/listings/mine')
+    if st!=200:
+        log(f'listing inventory unavailable: {st}; skip creation to avoid duplicates')
+        return
+    active=[x for x in d.get('data',[]) if str(x.get('status') or 'active').lower()=='active']
+    existing={str(x.get('title') or '').strip() for x in active}
     specs=[
       {'title':'API Documentation + OpenAPI/README Pack','description':'AI-assisted technical documentation for a public API or supplied codebase: OpenAPI 3.x structure, endpoint examples, README usage notes, and a consistency review. No private credential handling.','category':'writing','pricingMode':'fixed','fixedPrice':'20.00','tags':['api','openapi','documentation','readme'],'estimatedDeliveryHours':4},
       {'title':'QA / API Regression Test Review','description':'AI-assisted QA pass for a supplied public or authorized project: test-plan, reproducible bug report, API regression checks, edge cases, and concise verification notes.','category':'development','pricingMode':'fixed','fixedPrice':'25.00','tags':['qa','testing','api','regression'],'estimatedDeliveryHours':4},
       {'title':'CRM / RevOps Workflow Audit','description':'Structured audit of a supplied CRM/RevOps workflow: funnel gaps, automation opportunities, data-quality risks, reporting checks, and prioritized fixes. Public or owner-authorized inputs only.','category':'research','pricingMode':'fixed','fixedPrice':'30.00','tags':['crm','revops','automation','analysis'],'estimatedDeliveryHours':4}
     ]
-    for s in specs:
-        st,d=api('POST','/api/v1/listings',s)
+    for spec in specs:
+        if spec['title'] in existing:
+            continue
+        st,d=api('POST','/api/v1/listings',spec)
         if 200<=st<300:
-            actions.append({'type':'LISTING_CREATED','title':s['title'],'price':s['fixedPrice']})
-            log('created service listing: '+s['title'])
+            actions.append({'type':'LISTING_CREATED','title':spec['title'],'price':spec['fixedPrice']})
+            log('created missing service listing: '+spec['title'])
         else:
-            log(f'listing create failed {st}: {s["title"]}')
+            log(f'listing create failed {st}: {spec["title"]}')
 
 def maybe_intro(actions):
     marker=HOME/'.openwork/intro-posted-v1'

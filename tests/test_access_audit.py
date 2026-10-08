@@ -50,7 +50,7 @@ class AccessAuditTests(unittest.TestCase):
         self.home = Path(self.tmp.name)
         (self.home / ".openwork").mkdir()
         (self.home / ".toku-worker").mkdir()
-        (self.home / ".openwork/credentials.json").write_text(json.dumps({"apiKey": SECRET, "agentAccountId": "private-id"}))
+        (self.home / ".openwork/credentials.json").write_text(json.dumps({"apiKey": SECRET, "agentAccountId": "private-id", "baseUrl": "https://api.dealwork.ai"}))
         (self.home / ".toku-worker/api_key").write_text(SECRET + "\n")
 
     def valid(self, provider, endpoint, token):

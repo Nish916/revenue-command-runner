@@ -17,7 +17,7 @@ from urllib.request import HTTPRedirectHandler, Request, build_opener
 TIMEOUT = 10
 MAX_BODY = 1_048_576
 ROUTES = {
-    "dealwork": ("https://dealwork.ai", {
+    "dealwork": ("https://api.dealwork.ai", {
         "wallet": "/api/v1/wallet/balance",
         "contracts": "/api/v1/contracts?role=worker&per_page=50",
         "pending_requests": "/api/v1/listings/requests/pending"}),
