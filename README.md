@@ -19,7 +19,7 @@ Validate with `python3 -W error::ResourceWarning -m unittest discover -s tests`.
 
 `src/workday_gate.py -- COMMAND...` is retained as a compatibility wrapper for the installed LaunchAgents and now permits worker starts at every local time. `--check` reports `continuous_24h` without running work.
 
-RunAtLoad and the existing StartInterval/StartCalendarInterval schedules remain unchanged: the authenticated executor runs every minute, the GitHub radar every five minutes, the health cycle hourly, and the NexusEval worker hourly. Sleep/offline periods still produce no local work; shutdown requires the next login.
+RunAtLoad and the existing StartInterval/StartCalendarInterval schedules remain unchanged: the authenticated executor runs every minute, the GitHub radar every 30 minutes, the health cycle hourly, and the NexusEval worker hourly. Sleep/offline periods still produce no local work; shutdown requires the next login.
 
 `src/workday_awake.py` keeps the Mac from entering idle system sleep continuously while on AC power. The display can sleep, and manual/lid sleep remains possible. On battery or an unknown power source it fails closed and does not force the machine awake. No global power settings are changed.
 
