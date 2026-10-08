@@ -17,7 +17,7 @@ No credentials, KYC documents, bank data, private keys, or private proposal cont
 
 ## Local account health checks
 
-Run `python3 src/local_health_cycle.py` on the already-authorized worker machine. The cycle makes read-only account checks and a public Agent402 registration refresh at most once per 24 hours. A scheduler may invoke it hourly; an advisory lock prevents overlapping cycles. The host must be awake and online.
+Run `python3 src/local_health_cycle.py` on the already-authorized worker machine. This hourly Mac job now makes read-only authenticated account checks only. Public Agent402 registration is handled by the separate daily cloud workflow to avoid duplicate registration POSTs. An advisory lock prevents overlapping local checks; the host must be awake and online for those authenticated reads.
 
 Snapshots are private files outside the repository: `~/.openwork/access-audit.json`, `~/.openwork/agent402-refresh.json` and `~/.openwork/access-cycle.json`. Credentials stay in their existing local files; never commit snapshots or keys. A failed or malformed read is UNKNOWN, not a zero balance. A partial public index without a match is UNKNOWN; listing presence never implies paid usage.
 

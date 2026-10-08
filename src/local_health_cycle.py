@@ -19,7 +19,8 @@ def main():
         except BlockingIOError:
             return 0
         report = {"started_at": datetime.now(timezone.utc).isoformat(), "steps": {}}
-        for name, limit in (("access_audit", 85), ("agent402_refresh", 40)):
+        # Agent402 public refresh moved to the daily cloud workflow; avoid duplicate POSTs.
+        for name, limit in (("access_audit", 85),):
             try:
                 result = subprocess.run(
                     [sys.executable, str(source / (name + ".py"))],

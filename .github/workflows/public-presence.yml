@@ -3,7 +3,7 @@ name: Public Agent402 Presence
 on:
   workflow_dispatch:
   schedule:
-    - cron: "17 2 * * *"
+    - cron: "17 7 * * *"
 
 permissions:
   contents: read
