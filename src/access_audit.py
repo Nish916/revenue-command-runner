@@ -126,77 +126,51 @@ def normalize(provider, endpoint, payload):
         require(isinstance(data.get("status"), str) and bool(re.fullmatch(r"[a-zA-Z_ -]{1,40}", data["status"])))
         require(integer(data.get("jobsCompleted")) and data["jobsCompleted"] >= 0)
         require(isinstance(data.get("services"), list))
-        return {"status": data["status"], "jobs_completed": data["jobsCompleted"], "services_returned": len(data["services"])}
+        return {"status": data["status"], "jobsCompleted": data["jobsCompleted"], "services_count": len(data["services"])}
     if endpoint == "wallet":
-        require(integer(payload.get("balanceCents")) and isinstance(payload.get("transactions"), list))
-        return {"balance_cents": payload["balanceCents"], "currency": "USD", "transactions_returned": len(payload["transactions"])}
-    if endpoint == "connect":
-        keys = ("connected", "onboarded", "chargesEnabled", "payoutsEnabled")
-        require(all(type(payload.get(key)) is bool for key in keys))
-        return {key: payload[key] for key in keys}
-    require(endpoint == "jobs" and isinstance(payload.get("jobs"), list))
-    return {"records_returned": len(payload["jobs"])}
+        data = payload.get("wallet")
+        require(isinstance(data, dict))
+        for name in ("balance", "pending"):
+            require(isinstance(data.get(name), str))
+            require(Decimal(data[name]).is_finite())
+        require(data.get("currency") == "USD")
+        return {key: data[key] for key in ("balance", "pending", "currency")}
+    if endpoint in ("jobs", "connect"):
+        data = payload.get("jobs") if endpoint == "jobs" else payload.get("connections")
+        if data is None and endpoint == "connect":
+            data = payload.get("data")
+        require(isinstance(data, list))
+        return {"records_returned": len(data)}
+    raise ValueError()
 
 
-def audit(home=None, getter=None):
-    home, getter = Path.home() if home is None else Path(home), fetch if getter is None else getter
-    report = {"checked_at": datetime.now(timezone.utc).isoformat(),
-              "semantics": "Reported balances and counts; not proof of organic income or withdrawability.",
-              "providers": {}}
-    for provider, (_, paths) in ROUTES.items():
-        token, credential_error = credentials(provider, home)
-        endpoints = {}
-        for endpoint in paths:
-            status, payload, error = (None, None, credential_error) if credential_error else getter(provider, endpoint, token)
-            result = {"http_status": status, "state": "UNKNOWN"}
-            if error or status != 200:
-                result["reason"] = error or "HTTP_ERROR"
-            else:
-                try:
-                    result["data"] = normalize(provider, endpoint, payload)
-                    result["state"] = "AUTHENTICATED_READ_VERIFIED"
-                except (ValueError, TypeError, InvalidOperation):
-                    result["reason"] = "INVALID_RESPONSE"
-            endpoints[endpoint] = result
-        state = "AUTHENTICATED_READ_VERIFIED" if all(r["state"] == "AUTHENTICATED_READ_VERIFIED" for r in endpoints.values()) else "UNKNOWN"
-        report["providers"][provider] = {"state": state, "endpoints": endpoints}
-    return report
-
-
-def save(report, output):
-    output = Path(output).expanduser()
-    output.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
-    output.parent.chmod(0o700)
-    temporary = None
-    try:
-        with tempfile.NamedTemporaryFile(mode="w", dir=output.parent, prefix=".access-audit-", delete=False) as stream:
-            temporary = stream.name
-            os.fchmod(stream.fileno(), 0o600)
-            json.dump(report, stream, indent=2, allow_nan=False)
-            stream.write("\n")
-            stream.flush()
-            os.fsync(stream.fileno())
-        os.replace(temporary, output)
-    finally:
-        if temporary and os.path.exists(temporary):
-            os.unlink(temporary)
-
-
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", default="~/.openwork/access-audit.json")
+def audit_main():
+    parser = argparse.ArgumentParser(description="Access Audit CLI")
+    parser.add_argument("--provider", choices=list(ROUTES.keys()), required=True)
+    parser.add_argument("--endpoint", choices=list(ROUTES["dealwork"].keys()), required=True)
+    parser.add_argument("--home", type=Path, default=Path.home())
     args = parser.parse_args()
-    report = audit()
+
+    if args.endpoint not in ROUTES[args.provider][1]:
+        print(json.dumps({"status": 400, "error": "INVALID_ENDPOINT"}))
+        return
+
+    token, err = credentials(args.provider, args.home)
+    if err:
+        print(json.dumps({"status": 401, "error": err}))
+        return
+
+    status, payload, err = fetch(args.provider, args.endpoint, token)
+    if err:
+        print(json.dumps({"status": status if status else 500, "error": err}))
+        return
+
     try:
-        save(report, args.output)
+        normalized = normalize(args.provider, args.endpoint, payload)
+        print(json.dumps({"status": status, "data": normalized}))
     except Exception:
-        print("Snapshot could not be saved; no account details printed.")
-        return 2
-    for provider, data in report["providers"].items():
-        checks = ", ".join(f"{name}:{item['http_status'] or '-'}:{item['state']}" for name, item in data["endpoints"].items())
-        print(f"{provider}: {data['state']} ({checks})")
-    return 0
+        print(json.dumps({"status": status, "error": "NORMALIZATION_FAILED"}))
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    audit_main()
